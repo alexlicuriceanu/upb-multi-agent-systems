@@ -455,9 +455,80 @@ class MyAgent(BlocksWorldAgent):
         TODO (student): build a plan ONLY for the currently committed desire (not for full goal).
         Return a list of actions that should be executed until the desire is achieved or impossible.
         """
-        if self.current_desire is None:
+        if not self.current_desire:
             return []
-        return []
+
+        # we assume the desire is a PlaceBlockDesire (as initialized previously)
+        desire: PlaceBlockDesire = self.current_desire
+        block = desire.block
+        support = desire.support # None if target is Table
+
+        # handle holding: if we are holding a block
+        if holding_block:
+            # case A: we are holding the correct block (the one we want to place)
+            if holding_block == block:
+                # sub-case: target is the table
+                if support is None:
+                    return [PutDown(block)]
+                
+                # sub-case: target is another block
+                else:
+                    try:
+                        support_stack = current_world.get_stack(support)
+                        if support_stack.is_clear(support):
+                            # destination is clear! stack it.
+                            return [Stack(block, support)]
+                        else:
+                            # destination is blocked. 
+                            # we can't stack. we must PutDown the block to free our hand 
+                            # so we can go clear the rubbish off the support block.
+                            return [PutDown(block)]
+                    except ValueError:
+                        # support block is missing (stashed/held?). Wait by putting down.
+                        return [PutDown(block)]
+
+            # case B: we are holding the wrong block (garbage or obstruction)
+            else:
+                return [PutDown(holding_block)]
+
+        # handle empty hand: we need to manipulate the world
+        
+        # priority check: is the destination (support) clear?
+        # if the place we want to put our block is messy, we should clean it 
+        # before we pick up our block.
+        if support is not None:
+            try:
+                support_stack = current_world.get_stack(support)
+                if not support_stack.is_clear(support):
+                    # the support is buried. we must remove the block on top of it.
+                    block_on_top = support_stack.get_above(support)
+                    return [Unstack(block_on_top, support)]
+            except ValueError:
+                # support block missing. nothing we can do but wait.
+                return [NoAction()]
+
+        # acquire block: destination is clear (or table), so go get the block.
+        try:
+            block_stack = current_world.get_stack(block)
+            
+            # case A: the block is clear (top of its stack) -> pick it up
+            if block_stack.is_clear(block):
+                if block_stack.is_on_table(block):
+                    return [PickUp(block)]
+                else:
+                    # it is on top of something else
+                    block_below = block_stack.get_below(block)
+                    return [Unstack(block, block_below)]
+            
+            # case B: the block is buried -> unstack the one above it
+            else:
+                block_above = block_stack.get_above(block)
+                return [Unstack(block_above, block)]
+                
+        except ValueError:
+            # the block we want is not in any stack (stashed or teleporting).
+            # we wait for it to reappear.
+            return [NoAction()]
 
 
     def _is_desire_achieved(self, desire: AgentDesire, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
