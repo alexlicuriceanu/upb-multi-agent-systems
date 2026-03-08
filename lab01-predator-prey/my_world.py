@@ -285,14 +285,49 @@ class MyPredatorWithCommunication(MyPredator):
 
     def __init__(self, map_width=None, map_height=None):
         super(MyPredatorWithCommunication, self).__init__(map_width, map_height)
+        # Rule Compliance: Start knowing nobody.
+        self.known_allies = set() 
 
     def response(self, perceptions: MyAgentPerception) -> SocialAction:
-        """
-        TODO your response function for the predator agent WITH communication
-        :param perceptions:
-        :return:
-        """
-        return SocialAction(random.choice([MyAction.NORTH, MyAction.SOUTH, MyAction.EAST, MyAction.WEST]))
+        
+        # discovery: add any predators we see right now to our contact list
+        if perceptions.nearby_predators:
+            for predator_id, _ in perceptions.nearby_predators:
+                self.known_allies.add(predator_id)
+
+        # process messages (incoming)
+        communicated_prey = []
+        for msg in perceptions.messages:
+            # Check if content is valid (has distance method like a GridPosition)
+            if hasattr(msg.content, 'get_distance_to'):
+                # We use "comm" as a fake ID so it fits the tuple structure (id, pos)
+                communicated_prey.append(("comm", msg.content))
+        
+        # prepare messages (outgoing)
+        # only send to agents we have actually met (self.known_allies)
+        base_messages = []
+        if perceptions.nearby_prey:
+            for prey_id, prey_pos in perceptions.nearby_prey:
+                for ally_id in self.known_allies:
+                    base_messages.append((ally_id, prey_pos))
+        
+        # reuse movement logic
+        original_nearby = list(getattr(perceptions, 'nearby_prey', []))
+        
+        # trick the superclass into thinking communicated targets are real, visible prey
+        perceptions.nearby_prey = original_nearby + communicated_prey
+        
+        physical_action = super().response(perceptions)
+        
+        # restore reality so we don't break anything else
+        perceptions.nearby_prey = original_nearby
+        
+        # send the social action
+        action = SocialAction(physical_action)
+        for dest_id, content in base_messages:
+            action.add_outgoing_message(self.id, dest_id, content)
+            
+        return action
 
 
 
@@ -358,7 +393,7 @@ class MyEnvironment(HuntingEnvironment):
                                                              nearby_predators=predators,
                                                              nearby_prey=prey)
 
-        ## TODO: create perceptions for predator agents, including messages in the `message_box`
+        ## create perceptions for predator agents, including messages in the `message_box`
         for predator_data in self._predator_agents:
             nearby_obstacles = self.get_nearby_obstacles(predator_data.grid_position, MyEnvironment.PREDATOR_RANGE)
             nearby_predators = self.get_nearby_predators(predator_data.grid_position, MyEnvironment.PREDATOR_RANGE)
@@ -379,7 +414,7 @@ class MyEnvironment(HuntingEnvironment):
         STAGE 2: call response for each agent to obtain desired actions
         """
         agent_actions = {}
-        ## TODO: get actions for all agents
+        ## get actions for all agents
         for prey_data in self._prey_agents:
             agent_actions[prey_data] = prey_data.linked_agent.response(agent_perceptions[prey_data])
 
@@ -418,7 +453,7 @@ class MyEnvironment(HuntingEnvironment):
             else:
                 predator_action = agent_actions[predator_data]
                 new_position = None
-                ## TODO: handle case for a SocialAction instance
+                ## handle case for a SocialAction instance
                 if isinstance(predator_action, SocialAction):
                     self.message_box.extend(predator_action.outgoing_messages)
                     predator_action = predator_action.action
@@ -491,31 +526,51 @@ class Tester(object):
 
 
 if __name__ == "__main__":
-    tester = Tester(predator_agent_type=MyPredator, rand_seed=42, delay=0.0)
-    step_count, prey_kill_times = tester.make_steps()
-    print("Step count: ", step_count)
-    print("Prey kill times: ", prey_kill_times)
+    # tester = Tester(predator_agent_type=MyPredator, rand_seed=42, delay=0.0)
+    # step_count, prey_kill_times = tester.make_steps()
+    # print("Step count: ", step_count)
+    # print("Prey kill times: ", prey_kill_times)
 
-    # NUM_TESTS = 20
+    NUM_TESTS = 20
     
-    # step_count_list = []
-    # prey_kill_times_list = []
+    step_count_list = []
+    prey_kill_times_list = []
 
-    # for i in range(NUM_TESTS):
-    #     tester = Tester(predator_agent_type=MyPredator, rand_seed=42+i, delay=0.1)
-    #     step_count, prey_kill_times = tester.make_steps()
+    for i in range(NUM_TESTS):
+        tester = Tester(predator_agent_type=MyPredator, rand_seed=42+i, delay=0.0)
+        step_count, prey_kill_times = tester.make_steps()
 
-    #     step_count_list.append(step_count)
-    #     prey_kill_times_list.append(prey_kill_times)
+        step_count_list.append(step_count)
+        prey_kill_times_list.append(prey_kill_times)
 
-    # # Make an analysis of the min, max, median step counts and standard deviation as a describe call
-    # print("Step count analysis")
-    # print(pd.Series(step_count_list).describe())
+    # Make an analysis of the most common kill times as a scatter plot
+    print("Prey kill times analysis")
+    prey_kill_times = [item for sublist in prey_kill_times_list for item in sublist]
+    df = pd.DataFrame(prey_kill_times, columns=["Step", "Prey killed"])
+    df.plot(kind="scatter", x="Step", y="Prey killed", xlabel="Step", ylabel="Prey killed", yticks=range(0, 11, 1))
+    plt.show()
 
-    # # Make an analysis of the most common kill times as a scatter plot
-    # print("Prey kill times analysis")
-    # prey_kill_times = [item for sublist in prey_kill_times_list for item in sublist]
-    # df = pd.DataFrame(prey_kill_times, columns=["Step", "Prey killed"])
-    # df.plot(kind="scatter", x="Step", y="Prey killed", xlabel="Step", ylabel="Prey killed", yticks=range(0, 11, 1))
-    # plt.show()
 
+
+    step_count_list_comm = []
+    prey_kill_times_list_comm = []
+
+    for i in range(NUM_TESTS):
+        tester = Tester(predator_agent_type=MyPredatorWithCommunication, rand_seed=42+i, delay=0.0)
+        step_count, prey_kill_times = tester.make_steps()
+
+        step_count_list_comm.append(step_count)
+        prey_kill_times_list_comm.append(prey_kill_times)   
+
+    # Make an analysis of the most common kill times as a scatter plot
+    print("Prey kill times analysis")
+    prey_kill_times = [item for sublist in prey_kill_times_list_comm for item in sublist]
+    df = pd.DataFrame(prey_kill_times, columns=["Step", "Prey killed"])
+    df.plot(kind="scatter", x="Step", y="Prey killed", xlabel="Step", ylabel="Prey killed", yticks=range(0, 11, 1), color="red")
+    plt.show()
+
+    # Make an analysis of the min, max, median step counts and standard deviation as a describe call
+    print("Step count analysis")
+    print(pd.Series(step_count_list).describe())
+    print("Step count analysis")
+    print(pd.Series(step_count_list_comm).describe())
