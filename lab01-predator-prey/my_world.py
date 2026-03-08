@@ -208,74 +208,63 @@ class MyPredator(WildLifeAgent):
 
     def response(self, perceptions: MyAgentPerception) -> MyAction:
         """
-        TODO your response function for the predator agent with NO communication
+        your response function for the predator agent with NO communication
         :param perceptions:
         :return:
         """
         agent_pos = perceptions.agent_position
-        probability_map = ProbabilityMap()
-        probability_map.put(MyAction.NORTH,  MyPrey.UP_PROB)
-        probability_map.put(MyAction.SOUTH, MyPrey.DOWN_PROB)
-        probability_map.put(MyAction.WEST, MyPrey.LEFT_PROB)
-        probability_map.put(MyAction.EAST, MyPrey.RIGHT_PROB)
-
+        
+        valid_moves = [MyAction.NORTH, MyAction.SOUTH, MyAction.WEST, MyAction.EAST]
+        
         for obstacle_pos in perceptions.obstacles:
             if agent_pos.get_distance_to(obstacle_pos) > 1:
                 continue
 
             relative_orientation = agent_pos.get_simple_relative_orientation(obstacle_pos)
-            if relative_orientation == GridRelativeOrientation.FRONT:
-                probability_map.remove(MyAction.NORTH)
+            if relative_orientation == GridRelativeOrientation.FRONT and MyAction.NORTH in valid_moves:
+                valid_moves.remove(MyAction.NORTH)
+            elif relative_orientation == GridRelativeOrientation.BACK and MyAction.SOUTH in valid_moves:
+                valid_moves.remove(MyAction.SOUTH)
+            elif relative_orientation == GridRelativeOrientation.RIGHT and MyAction.EAST in valid_moves:
+                valid_moves.remove(MyAction.EAST)
+            elif relative_orientation == GridRelativeOrientation.LEFT and MyAction.WEST in valid_moves:
+                valid_moves.remove(MyAction.WEST)
 
-            elif relative_orientation == GridRelativeOrientation.BACK:
-                probability_map.remove(MyAction.SOUTH)
+        if not valid_moves:
+            return MyAction.NORTH
 
-            elif relative_orientation == GridRelativeOrientation.RIGHT:
-                probability_map.remove(MyAction.EAST)
-
-            elif relative_orientation == GridRelativeOrientation.LEFT:
-                probability_map.remove(MyAction.WEST)
-
-        ## save available moves
-        available_moves = ProbabilityMap(existing_map=probability_map)
-
-        ## examine actions which should be followed to catch the prey
-        ## this means that if the prey is in one of the 8 directions, the predator should remove the opposite direction
-        for (_, prey_pos) in perceptions.nearby_prey:
+        # if we see prey, move towards the closest one
+        if perceptions.nearby_prey:
+            closest_prey = min(perceptions.nearby_prey, key=lambda p: agent_pos.get_distance_to(p[1]))
+            prey_pos = closest_prey[1]
             relative_pos = agent_pos.get_simple_relative_orientation(prey_pos)
+            
+            preferred_moves = []
+            if relative_pos in [GridRelativeOrientation.FRONT, GridRelativeOrientation.FRONT_LEFT, GridRelativeOrientation.FRONT_RIGHT]:
+                preferred_moves.append(MyAction.NORTH)
+            if relative_pos in [GridRelativeOrientation.BACK, GridRelativeOrientation.BACK_LEFT, GridRelativeOrientation.BACK_RIGHT]:
+                preferred_moves.append(MyAction.SOUTH)
+            if relative_pos in [GridRelativeOrientation.LEFT, GridRelativeOrientation.FRONT_LEFT, GridRelativeOrientation.BACK_LEFT]:
+                preferred_moves.append(MyAction.WEST)
+            if relative_pos in [GridRelativeOrientation.RIGHT, GridRelativeOrientation.FRONT_RIGHT, GridRelativeOrientation.BACK_RIGHT]:
+                preferred_moves.append(MyAction.EAST)
+                
+            possible_best_moves = [m for m in preferred_moves if m in valid_moves]
+            if possible_best_moves:
+                chosen = random.choice(possible_best_moves)
+                self.last_move = chosen
+                return chosen
+            else:
+                chosen = random.choice(valid_moves)
+                self.last_move = chosen
+                return chosen
 
-            if relative_pos == GridRelativeOrientation.FRONT:
-                probability_map.remove(MyAction.SOUTH)
-
-            elif relative_pos == GridRelativeOrientation.FRONT_LEFT:
-                probability_map.remove(MyAction.SOUTH)
-                probability_map.remove(MyAction.EAST)
-
-            elif relative_pos == GridRelativeOrientation.FRONT_RIGHT:
-                probability_map.remove(MyAction.SOUTH)
-                probability_map.remove(MyAction.WEST)
-
-            elif relative_pos == GridRelativeOrientation.LEFT:
-                probability_map.remove(MyAction.EAST)
-
-            elif relative_pos == GridRelativeOrientation.RIGHT:
-                probability_map.remove(MyAction.WEST)
-
-            elif relative_pos == GridRelativeOrientation.BACK:
-                probability_map.remove(MyAction.NORTH)
-
-            elif relative_pos == GridRelativeOrientation.BACK_LEFT:
-                probability_map.remove(MyAction.NORTH)
-                probability_map.remove(MyAction.EAST)
-
-            elif relative_pos == GridRelativeOrientation.BACK_RIGHT:
-                probability_map.remove(MyAction.NORTH)
-                probability_map.remove(MyAction.WEST)
-
-        if not probability_map.empty():
-            return probability_map.choice()
+        # no prey seen: explore consistently
+        if getattr(self, 'last_move', None) in valid_moves:
+            return self.last_move
         else:
-            return available_moves.choice()
+            self.last_move = random.choice(valid_moves)
+            return self.last_move
         
 
 class MyPredatorWithCommunication(MyPredator):
@@ -370,6 +359,8 @@ class MyEnvironment(HuntingEnvironment):
                                                                  nearby_prey=prey,
                                                                  messages=AgentMessage.filter_messages_for(self.message_box, predator_data.linked_agent))
         
+        self.message_box.clear()
+
         """
         STAGE 2: call response for each agent to obtain desired actions
         """
@@ -414,6 +405,9 @@ class MyEnvironment(HuntingEnvironment):
                 predator_action = agent_actions[predator_data]
                 new_position = None
                 ## TODO: handle case for a SocialAction instance
+                if isinstance(predator_action, SocialAction):
+                    self.message_box.extend(predator_action.outgoing_messages)
+                    predator_action = predator_action.action
 
                 if predator_action == MyAction.NORTH:
                     new_position = predator_data.grid_position.get_neighbour_position(GridOrientation.NORTH)
@@ -483,7 +477,7 @@ class Tester(object):
 
 
 if __name__ == "__main__":
-    tester = Tester(predator_agent_type=MyPredator, rand_seed=42, delay=0.1)
+    tester = Tester(predator_agent_type=MyPredator, rand_seed=42, delay=0.0)
     step_count, prey_kill_times = tester.make_steps()
     print("Step count: ", step_count)
     print("Prey kill times: ", prey_kill_times)
