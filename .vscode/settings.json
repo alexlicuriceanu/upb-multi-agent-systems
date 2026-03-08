@@ -1,5 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./lab01-predator-prey"
-    ]
-}
