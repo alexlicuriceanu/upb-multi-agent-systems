@@ -560,6 +560,8 @@ class MyAgent(BlocksWorldAgent):
                 self.last_failure_reason = f"last outcome: {previous_action_message}"
             return
 
+        self.current_intention = []
+
         if self.mode == MyAgent.MODE_COMMITTED and self.current_desire:
             self.last_failure_reason = (
                 f"last action failed while committed to {self.current_desire.desire_id}"
