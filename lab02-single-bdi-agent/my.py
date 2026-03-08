@@ -409,6 +409,23 @@ class MyAgent(BlocksWorldAgent):
         """
         self.desire_pool = []
 
+        target_stacks = self.target_state.get_stacks()
+        for stack in target_stacks:
+            blocks = stack.get_blocks()
+            
+            # the first block in the list is on the table
+            if blocks:
+                base_block = blocks[0]
+                # desire: place base_block on table (support=None)
+                self.desire_pool.append(PlaceBlockDesire(block=base_block, support=None))
+
+                # for all subsequent blocks, they go on the one before them
+                for i in range(1, len(blocks)):
+                    top_block = blocks[i]
+                    support_block = blocks[i-1]
+                    
+                    # desire: place top_block on support_block
+                    self.desire_pool.append(PlaceBlockDesire(block=top_block, support=support_block))
 
     def _drop_current_desire(self, reason: str) -> None:
         if self.current_desire is not None:
@@ -425,6 +442,11 @@ class MyAgent(BlocksWorldAgent):
         TODO (student): select one desire from the available/required desires.
         This method must return exactly one desire (or None if none can be pursued right now).
         """
+        for desire in self.desire_pool:
+            if not desire.is_achieved(current_world, holding_block) and \
+               not desire.is_impossible(current_world, holding_block):
+                return desire
+                
         return None
 
 
