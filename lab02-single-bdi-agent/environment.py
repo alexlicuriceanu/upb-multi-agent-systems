@@ -274,6 +274,10 @@ class BlocksWorldEnvironment(Environment):
     def __str__(self):
         prefix = {}
 
+        stacks = self.worldstate.get_stacks()
+        if not stacks:
+            return "World is empty (all blocks stashed or held).\n"
+
         for adata in self.agents_data:
             data = []
             data.append(" " + str(adata.agent))
@@ -381,6 +385,12 @@ class DynamicEnvironment(BlocksWorldEnvironment):
                 self.stash.remove(b)
 
                 s = self._pick_stack(True, True, observed_stacks)
+                
+                if s is None:
+                    # no valid stack found to place the block. Put it back in stash.
+                    self.stash.add(b)
+                    return
+
                 self.worldstate.stack(b, s.get_top_block())
                 if self.verbose:
                     print(DynamicEnvironment.HEAD + "[ %s ] : stash -> %s." % (str(b), str(s)))

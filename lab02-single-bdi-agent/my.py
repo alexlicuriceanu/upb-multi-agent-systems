@@ -595,7 +595,7 @@ class MyAgent(BlocksWorldAgent):
 
 
 class Tester(object):
-    STEP_DELAY = 0.2
+    STEP_DELAY = 0.0
     TEST_SUITE = "tests/0e-large/"
     VERBOSE = True
 
