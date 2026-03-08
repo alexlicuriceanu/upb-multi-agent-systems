@@ -259,10 +259,24 @@ class MyPredator(WildLifeAgent):
                 self.last_move = chosen
                 return chosen
 
-        # no prey seen: explore consistently
+        # no prey seen, explore consistently
         if getattr(self, 'last_move', None) in valid_moves:
             return self.last_move
         else:
+            opposites = {
+                MyAction.NORTH: MyAction.SOUTH,
+                MyAction.SOUTH: MyAction.NORTH,
+                MyAction.EAST: MyAction.WEST,
+                MyAction.WEST: MyAction.EAST
+            }
+            last = getattr(self, 'last_move', None)
+            
+            if last is not None:
+                ninety_deg_moves = [m for m in valid_moves if m != opposites[last]]
+                if ninety_deg_moves:
+                    self.last_move = random.choice(ninety_deg_moves)
+                    return self.last_move
+                    
             self.last_move = random.choice(valid_moves)
             return self.last_move
         
