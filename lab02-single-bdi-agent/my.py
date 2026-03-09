@@ -87,74 +87,6 @@ class PlaceBlockDesire(AgentDesire):
     def get_desired_blocks(self) -> List[Block]:
         return [self.block]
 
-
-# @dataclass
-# class BuildStackDesire(AgentDesire):
-#     stack_blocks: List[Block]
-
-#     def __init__(self, stack_blocks: List[Block]):
-#         super().__init__(
-#             desire_id="stack-" + "-".join([str(b) for b in stack_blocks]),
-#             description="Build stack: " + "-".join([str(b) for b in stack_blocks]),
-#         )
-#         self.stack_blocks = list(stack_blocks)
-
-
-#     def is_achieved(self, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
-#         if len(self.stack_blocks) == 0:
-#             return False
-
-#         try:
-#             bottom = self.stack_blocks[0]
-#             stack = current_world.get_stack(bottom)
-#             if not stack.is_on_table(bottom):
-#                 return False
-
-#             for idx in range(1, len(self.stack_blocks)):
-#                 if not stack.is_on(self.stack_blocks[idx], self.stack_blocks[idx - 1]):
-#                     return False
-
-#             return True
-#         except Exception:
-#             return False
-
-
-#     def is_impossible(self, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
-#         if len(self.stack_blocks) == 0:
-#             return True
-
-#         for b in self.stack_blocks:
-#             try:
-#                 current_world.get_stack(b)
-#             except Exception:
-#                 if holding_block != b:
-#                     return True
-
-#         if self.is_achieved(current_world, holding_block):
-#             return False
-
-#         for idx, b in enumerate(self.stack_blocks):
-#             try:
-#                 block_stack = current_world.get_stack(b)
-#                 if block_stack.is_locked(b):
-#                     # A locked block is impossible to move — if it's not in
-#                     # its correct target position, the stack can never be built.
-#                     expected_support = None if idx == 0 else self.stack_blocks[idx - 1]
-#                     if expected_support is None:
-#                         if not block_stack.is_on_table(b):
-#                             return True
-#                     else:
-#                         if not block_stack.is_on(b, expected_support):
-#                             return True
-#             except Exception:
-#                 return True
-
-#         return False
-
-
-#     def get_desired_blocks(self) -> List[Block]:
-#         return list(self.stack_blocks)
-
 @dataclass
 class BuildStackDesire(AgentDesire):
     stack_blocks: List[Block]
@@ -204,11 +136,11 @@ class BuildStackDesire(AgentDesire):
                             if not block_stack.is_on(b, expected_support):
                                 return True
                         except ValueError:
-                            # The support block isn't in this stack, so it's definitely in the wrong place
+                            # the support block isn't in this stack, so it's definitely in the wrong place
                             return True
             except Exception:
-                # FIX: If the block is not in a stack, it's either held by the arm or stashed by the environment.
-                # In neither case does the desire become permanently impossible! We just pass and keep the desire alive.
+                # fix: if the block is not in a stack, it's either held by the arm or stashed by the environment.
+                # in neither case does the desire become permanently impossible, we just pass
                 pass
 
         return False
@@ -468,8 +400,10 @@ class MyAgent(BlocksWorldAgent):
         The method should populate `self.desire_pool` with all desires that the student strategy may consider.
         """
         self.desire_pool = []
+
         for stack in self.target_state.get_stacks():
             blocks_in_stack = list(stack.get_blocks())
+
             if blocks_in_stack:
                 self.desire_pool.append(BuildStackDesire(blocks_in_stack))
 
@@ -490,13 +424,18 @@ class MyAgent(BlocksWorldAgent):
         This method must return exactly one desire (or None if none can be pursued right now).
         """
         for desire in self.desire_pool:
-            if not isinstance(desire, BuildStackDesire): continue
+            if not isinstance(desire, BuildStackDesire):
+                continue
             
-            # If not achieved, pick it. 
-            # Note: We could be smarter (pick the one that is "closest" to completion), 
-            # but picking the first incomplete one is sufficient.
-            if not desire.is_achieved(current_world, holding_block):
-                return desire
+            if desire.is_achieved(current_world, holding_block):
+                continue
+
+            if desire.is_impossible(current_world, holding_block):
+                continue
+
+            # we could also pick the one that is closest to completion
+            return desire
+
         return None
 
 
@@ -505,7 +444,8 @@ class MyAgent(BlocksWorldAgent):
         TODO (student): build a plan ONLY for the currently committed desire (not for full goal).
         Return a list of actions that should be executed until the desire is achieved or impossible.
         """
-        if not isinstance(self.current_desire, BuildStackDesire): return []
+        if not isinstance(self.current_desire, BuildStackDesire):
+            return []
         
         target_stack = self.current_desire.stack_blocks
         
