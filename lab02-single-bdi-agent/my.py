@@ -470,7 +470,7 @@ class MyAgent(BlocksWorldAgent):
                     except ValueError:
                         pass
             
-            # Case A: Block is in correct position
+            # case a: block is in correct position
             if is_in_position:
                 if not current_stack.is_locked(block):
                     if current_stack.is_clear(block):
@@ -480,12 +480,13 @@ class MyAgent(BlocksWorldAgent):
                         return [Unstack(block_above, block)]
                 continue
 
-            # Case B: Block is NOT in position
+            # case b: block is not in position
             if holding_block != block:
                 if holding_block:
                     return [PutDown(holding_block)]
                 
-                if not current_stack: return [] 
+                if not current_stack:
+                    return [] 
                 
                 if current_stack.is_clear(block):
                     if current_stack.is_on_table(block):
@@ -496,14 +497,14 @@ class MyAgent(BlocksWorldAgent):
                     block_above = current_stack.get_above(block)
                     return [Unstack(block_above, block)]
             
-            else: # Holding the block
+            else: # holding the block
                 if required_support is None:
                     return [PutDown(block)]
                 else:
                     try:
                         supp_stack = current_world.get_stack(required_support)
-                        # SAFE CHECK: Use get_blocks()[-1] instead of is_clear()
-                        # This avoids crashing if the support stack is fully locked.
+                        # safe check: get_blocks()[-1] instead of is_clear()
+
                         all_blocks = supp_stack.get_blocks()
                         if all_blocks and all_blocks[-1] == required_support:
                             return [Stack(block, required_support)]
