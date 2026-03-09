@@ -285,26 +285,24 @@ class MyPredatorWithCommunication(MyPredator):
 
     def __init__(self, map_width=None, map_height=None):
         super(MyPredatorWithCommunication, self).__init__(map_width, map_height)
-        # Rule Compliance: Start knowing nobody.
+        # rule: start knowing nobody
         self.known_allies = set() 
 
     def response(self, perceptions: MyAgentPerception) -> SocialAction:
         
-        # discovery: add any predators we see right now to our contact list
+        # discovery: add any predators we see right now to our known list
         if perceptions.nearby_predators:
             for predator_id, _ in perceptions.nearby_predators:
                 self.known_allies.add(predator_id)
 
-        # process messages (incoming)
+        # process incoming messages
         communicated_prey = []
         for msg in perceptions.messages:
-            # Check if content is valid (has distance method like a GridPosition)
+            # check if content is valid
             if hasattr(msg.content, 'get_distance_to'):
-                # We use "comm" as a fake ID so it fits the tuple structure (id, pos)
-                communicated_prey.append(("comm", msg.content))
+                communicated_prey.append(("comm", msg.content)) # use "comm" as a fake ID so it fits the tuple structure (id, pos)
         
-        # prepare messages (outgoing)
-        # only send to agents we have actually met (self.known_allies)
+        # prepare outgoing messages: only send to agents we have met
         base_messages = []
         if perceptions.nearby_prey:
             for prey_id, prey_pos in perceptions.nearby_prey:
@@ -314,15 +312,14 @@ class MyPredatorWithCommunication(MyPredator):
         # reuse movement logic
         original_nearby = list(getattr(perceptions, 'nearby_prey', []))
         
-        # trick the superclass into thinking communicated targets are real, visible prey
+        # trick the superclass into thinking communicated targets are real prey
         perceptions.nearby_prey = original_nearby + communicated_prey
-        
         physical_action = super().response(perceptions)
         
-        # restore reality so we don't break anything else
+        # restore to real state
         perceptions.nearby_prey = original_nearby
         
-        # send the social action
+        # send the action
         action = SocialAction(physical_action)
         for dest_id, content in base_messages:
             action.add_outgoing_message(self.id, dest_id, content)
