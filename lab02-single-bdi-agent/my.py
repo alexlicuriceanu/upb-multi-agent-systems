@@ -88,6 +88,73 @@ class PlaceBlockDesire(AgentDesire):
         return [self.block]
 
 
+# @dataclass
+# class BuildStackDesire(AgentDesire):
+#     stack_blocks: List[Block]
+
+#     def __init__(self, stack_blocks: List[Block]):
+#         super().__init__(
+#             desire_id="stack-" + "-".join([str(b) for b in stack_blocks]),
+#             description="Build stack: " + "-".join([str(b) for b in stack_blocks]),
+#         )
+#         self.stack_blocks = list(stack_blocks)
+
+
+#     def is_achieved(self, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
+#         if len(self.stack_blocks) == 0:
+#             return False
+
+#         try:
+#             bottom = self.stack_blocks[0]
+#             stack = current_world.get_stack(bottom)
+#             if not stack.is_on_table(bottom):
+#                 return False
+
+#             for idx in range(1, len(self.stack_blocks)):
+#                 if not stack.is_on(self.stack_blocks[idx], self.stack_blocks[idx - 1]):
+#                     return False
+
+#             return True
+#         except Exception:
+#             return False
+
+
+#     def is_impossible(self, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
+#         if len(self.stack_blocks) == 0:
+#             return True
+
+#         for b in self.stack_blocks:
+#             try:
+#                 current_world.get_stack(b)
+#             except Exception:
+#                 if holding_block != b:
+#                     return True
+
+#         if self.is_achieved(current_world, holding_block):
+#             return False
+
+#         for idx, b in enumerate(self.stack_blocks):
+#             try:
+#                 block_stack = current_world.get_stack(b)
+#                 if block_stack.is_locked(b):
+#                     # A locked block is impossible to move — if it's not in
+#                     # its correct target position, the stack can never be built.
+#                     expected_support = None if idx == 0 else self.stack_blocks[idx - 1]
+#                     if expected_support is None:
+#                         if not block_stack.is_on_table(b):
+#                             return True
+#                     else:
+#                         if not block_stack.is_on(b, expected_support):
+#                             return True
+#             except Exception:
+#                 return True
+
+#         return False
+
+
+#     def get_desired_blocks(self) -> List[Block]:
+#         return list(self.stack_blocks)
+
 @dataclass
 class BuildStackDesire(AgentDesire):
     stack_blocks: List[Block]
@@ -98,7 +165,6 @@ class BuildStackDesire(AgentDesire):
             description="Build stack: " + "-".join([str(b) for b in stack_blocks]),
         )
         self.stack_blocks = list(stack_blocks)
-
 
     def is_achieved(self, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
         if len(self.stack_blocks) == 0:
@@ -118,17 +184,9 @@ class BuildStackDesire(AgentDesire):
         except Exception:
             return False
 
-
     def is_impossible(self, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
         if len(self.stack_blocks) == 0:
             return True
-
-        for b in self.stack_blocks:
-            try:
-                current_world.get_stack(b)
-            except Exception:
-                if holding_block != b:
-                    return True
 
         if self.is_achieved(current_world, holding_block):
             return False
@@ -137,24 +195,26 @@ class BuildStackDesire(AgentDesire):
             try:
                 block_stack = current_world.get_stack(b)
                 if block_stack.is_locked(b):
-                    # A locked block is impossible to move — if it's not in
-                    # its correct target position, the stack can never be built.
                     expected_support = None if idx == 0 else self.stack_blocks[idx - 1]
                     if expected_support is None:
                         if not block_stack.is_on_table(b):
                             return True
                     else:
-                        if not block_stack.is_on(b, expected_support):
+                        try:
+                            if not block_stack.is_on(b, expected_support):
+                                return True
+                        except ValueError:
+                            # The support block isn't in this stack, so it's definitely in the wrong place
                             return True
             except Exception:
-                return True
+                # FIX: If the block is not in a stack, it's either held by the arm or stashed by the environment.
+                # In neither case does the desire become permanently impossible! We just pass and keep the desire alive.
+                pass
 
         return False
 
-
     def get_desired_blocks(self) -> List[Block]:
         return list(self.stack_blocks)
-
 
 @dataclass
 class BuildRowDesire(AgentDesire):
@@ -408,24 +468,11 @@ class MyAgent(BlocksWorldAgent):
         The method should populate `self.desire_pool` with all desires that the student strategy may consider.
         """
         self.desire_pool = []
+        for stack in self.target_state.get_stacks():
+            blocks_in_stack = list(stack.get_blocks())
+            if blocks_in_stack:
+                self.desire_pool.append(BuildStackDesire(blocks_in_stack))
 
-        target_stacks = self.target_state.get_stacks()
-        for stack in target_stacks:
-            blocks = stack.get_blocks()
-            
-            # the first block in the list is on the table
-            if blocks:
-                base_block = blocks[0]
-                # desire: place base_block on table (support=None)
-                self.desire_pool.append(PlaceBlockDesire(block=base_block, support=None))
-
-                # for all subsequent blocks, they go on the one before them
-                for i in range(1, len(blocks)):
-                    top_block = blocks[i]
-                    support_block = blocks[i-1]
-                    
-                    # desire: place top_block on support_block
-                    self.desire_pool.append(PlaceBlockDesire(block=top_block, support=support_block))
 
     def _drop_current_desire(self, reason: str) -> None:
         if self.current_desire is not None:
@@ -443,10 +490,13 @@ class MyAgent(BlocksWorldAgent):
         This method must return exactly one desire (or None if none can be pursued right now).
         """
         for desire in self.desire_pool:
-            if not desire.is_achieved(current_world, holding_block) and \
-               not desire.is_impossible(current_world, holding_block):
+            if not isinstance(desire, BuildStackDesire): continue
+            
+            # If not achieved, pick it. 
+            # Note: We could be smarter (pick the one that is "closest" to completion), 
+            # but picking the first incomplete one is sufficient.
+            if not desire.is_achieved(current_world, holding_block):
                 return desire
-                
         return None
 
 
@@ -455,80 +505,74 @@ class MyAgent(BlocksWorldAgent):
         TODO (student): build a plan ONLY for the currently committed desire (not for full goal).
         Return a list of actions that should be executed until the desire is achieved or impossible.
         """
-        if not self.current_desire:
-            return []
+        if not isinstance(self.current_desire, BuildStackDesire): return []
+        
+        target_stack = self.current_desire.stack_blocks
+        
+        for i, block in enumerate(target_stack):
+            required_support = target_stack[i-1] if i > 0 else None
+            
+            try:
+                current_stack = current_world.get_stack(block)
+            except ValueError:
+                current_stack = None
 
-        # we assume the desire is a PlaceBlockDesire (as initialized previously)
-        desire: PlaceBlockDesire = self.current_desire
-        block = desire.block
-        support = desire.support # None if target is Table
-
-        # handle holding: if we are holding a block
-        if holding_block:
-            # case A: we are holding the correct block (the one we want to place)
-            if holding_block == block:
-                # sub-case: target is the table
-                if support is None:
-                    return [PutDown(block)]
-                
-                # sub-case: target is another block
+            is_in_position = False
+            
+            if current_stack:
+                if required_support is None:
+                    if current_stack.is_on_table(block):
+                        is_in_position = True
                 else:
                     try:
-                        support_stack = current_world.get_stack(support)
-                        if support_stack.is_clear(support):
-                            # destination is clear! stack it.
-                            return [Stack(block, support)]
+                        if current_stack.get_below(block) == required_support:
+                            is_in_position = True
+                    except ValueError:
+                        pass
+            
+            # Case A: Block is in correct position
+            if is_in_position:
+                if not current_stack.is_locked(block):
+                    if current_stack.is_clear(block):
+                        return [Lock(block)]
+                    else:
+                        block_above = current_stack.get_above(block)
+                        return [Unstack(block_above, block)]
+                continue
+
+            # Case B: Block is NOT in position
+            if holding_block != block:
+                if holding_block:
+                    return [PutDown(holding_block)]
+                
+                if not current_stack: return [] 
+                
+                if current_stack.is_clear(block):
+                    if current_stack.is_on_table(block):
+                        return [PickUp(block)]
+                    else:
+                        return [Unstack(block, current_stack.get_below(block))]
+                else:
+                    block_above = current_stack.get_above(block)
+                    return [Unstack(block_above, block)]
+            
+            else: # Holding the block
+                if required_support is None:
+                    return [PutDown(block)]
+                else:
+                    try:
+                        supp_stack = current_world.get_stack(required_support)
+                        # SAFE CHECK: Use get_blocks()[-1] instead of is_clear()
+                        # This avoids crashing if the support stack is fully locked.
+                        all_blocks = supp_stack.get_blocks()
+                        if all_blocks and all_blocks[-1] == required_support:
+                            return [Stack(block, required_support)]
                         else:
-                            # destination is blocked. 
-                            # we can't stack. we must PutDown the block to free our hand 
-                            # so we can go clear the rubbish off the support block.
                             return [PutDown(block)]
                     except ValueError:
-                        # support block is missing (stashed/held?). Wait by putting down.
                         return [PutDown(block)]
-
-            # case B: we are holding the wrong block (garbage or obstruction)
-            else:
-                return [PutDown(holding_block)]
-
-        # handle empty hand: we need to manipulate the world
         
-        # priority check: is the destination (support) clear?
-        # if the place we want to put our block is messy, we should clean it 
-        # before we pick up our block.
-        if support is not None:
-            try:
-                support_stack = current_world.get_stack(support)
-                if not support_stack.is_clear(support):
-                    # the support is buried. we must remove the block on top of it.
-                    block_on_top = support_stack.get_above(support)
-                    return [Unstack(block_on_top, support)]
-            except ValueError:
-                # support block missing. nothing we can do but wait.
-                return [NoAction()]
-
-        # acquire block: destination is clear (or table), so go get the block.
-        try:
-            block_stack = current_world.get_stack(block)
-            
-            # case A: the block is clear (top of its stack) -> pick it up
-            if block_stack.is_clear(block):
-                if block_stack.is_on_table(block):
-                    return [PickUp(block)]
-                else:
-                    # it is on top of something else
-                    block_below = block_stack.get_below(block)
-                    return [Unstack(block, block_below)]
-            
-            # case B: the block is buried -> unstack the one above it
-            else:
-                block_above = block_stack.get_above(block)
-                return [Unstack(block_above, block)]
-                
-        except ValueError:
-            # the block we want is not in any stack (stashed or teleporting).
-            # we wait for it to reappear.
-            return [NoAction()]
+        return []
 
 
     def _is_desire_achieved(self, desire: AgentDesire, current_world: BlocksWorld, holding_block: Optional[Block] = None) -> bool:
@@ -559,8 +603,6 @@ class MyAgent(BlocksWorldAgent):
             if previous_action_message:
                 self.last_failure_reason = f"last outcome: {previous_action_message}"
             return
-
-        self.current_intention = []
 
         if self.mode == MyAgent.MODE_COMMITTED and self.current_desire:
             self.last_failure_reason = (
