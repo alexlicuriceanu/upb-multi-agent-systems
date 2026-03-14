@@ -1,9 +1,7 @@
 import gym
 import numpy as np
+from constants import GAMMA, EPSILON, MAX_ITERATIONS
 
-MAX_ITERATIONS = 5e5
-EPSILON = 1e-3
-GAMMA = 0.9
 
 def standard_value_iteration(env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS):
     # extract number of states and actions
@@ -49,12 +47,12 @@ def standard_value_iteration(env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_IT
     return V, iteration_count
 
 if __name__ == "__main__":
-    print("Running Value Iteration for Taxi-v3")
+    print('\n')
+    
     env_taxi = gym.make("Taxi-v3")
     V_star_taxi, iters_taxi = standard_value_iteration(env_taxi)
-    print(f"Taxi-v3 converged in {iters_taxi} iterations\n")
-    
-    print("Running Value Iteration for FrozenLake-v1 (8x8)")
+    print(f"[Standard VI] Taxi-v3: {iters_taxi} iterations")
+
     env_frozen = gym.make("FrozenLake-v1", map_name="8x8", is_slippery=True)
     V_star_frozen, iters_frozen = standard_value_iteration(env_frozen)
-    print(f"FrozenLake-v1 converged in {iters_frozen} iterations\n")
+    print(f"[Standard VI] FrozenLake-v1: {iters_frozen} iterations\n")
