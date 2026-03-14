@@ -40,17 +40,14 @@ def prioritized_sweeping_vi(env, V_star, gamma=GAMMA, epsilon=EPSILON, max_iters
             break
     return iteration_count, norms_history
 
-# --- EXECUTION SCRIPT ---
 if __name__ == "__main__":
-    # We will test on Taxi-v3 first
-    print("Initializing Taxi-v3...")
+
     env_taxi = gym.make("Taxi-v3")
-    
-    print("1. Running Standard Value Iteration to find V*...")
     V_star_taxi, iters_taxi = standard_value_iteration(env_taxi)
-    
-    print("3. Running Prioritized Sweeping VI... (This may take a moment)")
     iters_ps, norms_ps = prioritized_sweeping_vi(env_taxi, V_star_taxi)
-    print(f"   -> Prioritized Sweeping converged in {iters_ps} iterations.\n")
+    print(f"[Prioritized Sweeping VI] Taxi-v3: {iters_ps} iterations\n")
     
-    print("Done! You now have the iteration counts for your report.")
+    env_frozen = gym.make("FrozenLake-v1", map_name="8x8", is_slippery=True)
+    V_star_frozen, iters_frozen = standard_value_iteration(env_frozen)
+    iters_ps_frozen, norms_ps_frozen = prioritized_sweeping_vi(env_frozen, V_star_frozen)
+    print(f"[Prioritized Sweeping VI] FrozenLake-v1: {iters_ps_frozen} iterations\n")
