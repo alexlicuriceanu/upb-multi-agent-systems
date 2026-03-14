@@ -10,23 +10,30 @@ def gauss_seidel_vi(env, V_star, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITE
     V = np.zeros(nS)
     iteration_count = 0
     norms_history = []
+    current_norm = np.linalg.norm(V - V_star)
     
     while iteration_count < max_iters:
+        delta = 0  # max per-state change this sweep
         for s in range(nS):
             action_values = np.zeros(nA)
             for a in range(nA):
                 for prob, next_state, reward, done in env.P[s][a]:
                     action_values[a] += prob * (reward + gamma * V[next_state])
             
+            old_v = V[s]
             V[s] = np.max(action_values)
+            delta = max(delta, abs(V[s] - old_v))
             iteration_count += 1
             
             current_norm = np.linalg.norm(V - V_star)
             norms_history.append(current_norm)
             
-            if current_norm <= epsilon or iteration_count >= max_iters:
+            if iteration_count >= max_iters:
                 break
-        if current_norm <= epsilon:
+
+        # Stop if either the per-state delta is tiny (like Standard VI)
+        # or if we've actually gotten close to V_star in norm
+        if delta <= epsilon or current_norm <= epsilon:
             break
     return iteration_count, norms_history
 
