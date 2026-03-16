@@ -17,26 +17,39 @@ def prioritized_sweeping_vi(env, V_star, gamma=GAMMA, epsilon=EPSILON, max_iters
             for prob, next_state, reward, done in env.P[state][a]:
                 action_values[a] += prob * (reward + gamma * current_V[next_state])
         return np.abs(np.max(action_values) - current_V[state])
-        
+
+    # Precompute predecessor map: predecessors[s] = set of states that can transition into s
+    predecessors = {s: set() for s in range(nS)}
+    for s in range(nS):
+        for a in range(nA):
+            for prob, next_state, reward, done in env.P[s][a]:
+                if prob > 0:
+                    predecessors[next_state].add(s)
+
     for s in range(nS):
         H[s] = compute_bellman_error(s, V)
         
     while iteration_count < max_iters:
         s_k = np.argmax(H)
+        delta = H[s_k]  # the Bellman error of the state being updated
+
         action_values = np.zeros(nA)
         for a in range(nA):
             for prob, next_state, reward, done in env.P[s_k][a]:
                 action_values[a] += prob * (reward + gamma * V[next_state])
         V[s_k] = np.max(action_values)
+        H[s_k] = 0.0  # just updated, error is now ~0
         iteration_count += 1
         
-        for s in range(nS):
-            H[s] = compute_bellman_error(s, V)
+        # Only update priorities for states that can reach s_k
+        for pred in predecessors[s_k]:
+            H[pred] = compute_bellman_error(pred, V)
             
         current_norm = np.linalg.norm(V - V_star)
         norms_history.append(current_norm)
         
-        if current_norm <= epsilon:
+        # Stop when max Bellman error (delta) is small, same criterion as Standard VI
+        if delta <= epsilon or current_norm <= epsilon:
             break
     return iteration_count, norms_history
 

@@ -31,7 +31,6 @@ def get_standard_vi_norms(env, V_star, gamma=GAMMA, epsilon=EPSILON, max_iters=M
             V[s] = best_action_value
             iteration_count += 1
             
-            # Track L2 norm for plotting
             current_norm = np.linalg.norm(V - V_star)
             norms_history.append(current_norm)
             
@@ -49,7 +48,7 @@ def generate_plots(env_name, is_slippery=False):
     else:
         env = gym.make(env_name)
         
-    print(f"Running on {env_name}:\n")
+    print(f"Running on {env_name}:")
 
 
     V_star, iters_vi = standard_value_iteration(env=env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS)
@@ -67,7 +66,7 @@ def generate_plots(env_name, is_slippery=False):
     pi_all_iters = []
     for i in range(5):
         iters_pi, norms_pi = policy_iteration(env=env, V_star=V_star, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS)
-        print(f"[Policy Iteration] {env_name}: {iters_pi} iterations")
+        print(f"[Policy Iteration-{i+1}] {env_name}: {iters_pi} iterations")
 
         pi_all_iters.append(iters_pi)
         pi_all_norms.append(norms_pi)
@@ -88,7 +87,7 @@ def generate_plots(env_name, is_slippery=False):
     plt.xlabel('Number of Iterations')
     plt.ylabel('Distance to Optimal Value')
     
-    plt.yscale('log') 
+    #plt.yscale('log') 
     plt.grid(True, which="both", ls="--", alpha=0.5)
     plt.legend()
     plt.tight_layout()
@@ -100,4 +99,5 @@ def generate_plots(env_name, is_slippery=False):
 if __name__ == "__main__":
     print('\n\n')
     generate_plots("Taxi-v3")
+    print('\n')
     generate_plots("FrozenLake-v1", is_slippery=True)
