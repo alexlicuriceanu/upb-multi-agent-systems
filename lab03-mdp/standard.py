@@ -2,8 +2,7 @@ import gym
 import numpy as np
 from constants import GAMMA, EPSILON, MAX_ITERATIONS
 
-
-def standard_value_iteration(env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS):
+def standard_vi(env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS):
     # extract number of states and actions
     nS = env.observation_space.n
     nA = env.action_space.n
@@ -12,7 +11,7 @@ def standard_value_iteration(env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_IT
     V = np.zeros(nS)
     iteration_count = 0
     
-    # standard value iteration algorithm loop
+    # start the iteration loop
     while iteration_count < max_iters:
         delta = 0
         V_old = np.copy(V) # save the old values for this sweep
@@ -24,7 +23,7 @@ def standard_value_iteration(env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_IT
             # loop through each possible action to find the best one
             for a in range(nA):
                 # calculate the expected value for each action using the transition probabilities
-                for prob, next_state, reward, done in env.P[s][a]:
+                for prob, next_state, reward, _ in env.P[s][a]:
                     action_values[a] += prob * (reward + gamma * V_old[next_state])
             
             # update V(s) with the maximum action value
@@ -50,9 +49,9 @@ if __name__ == "__main__":
     print('\n')
     
     env_taxi = gym.make("Taxi-v3")
-    V_star_taxi, iters_taxi = standard_value_iteration(env_taxi)
+    V_star_taxi, iters_taxi = standard_vi(env_taxi)
     print(f"[Standard VI] Taxi-v3: {iters_taxi} iterations")
 
     env_frozen = gym.make("FrozenLake-v1", map_name="8x8", is_slippery=True)
-    V_star_frozen, iters_frozen = standard_value_iteration(env_frozen)
+    V_star_frozen, iters_frozen = standard_vi(env_frozen)
     print(f"[Standard VI] FrozenLake-v1: {iters_frozen} iterations\n")

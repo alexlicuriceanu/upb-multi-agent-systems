@@ -2,14 +2,11 @@ import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
-from standard import standard_value_iteration
+from standard import standard_vi
 from gauss_seidel import gauss_seidel_vi
 from prioritized_sweeping import prioritized_sweeping_vi
 from policy_iteration import policy_iteration
-
-GAMMA = 0.9
-EPSILON = 1e-3
-MAX_ITERATIONS = 5e5
+from constants import GAMMA, EPSILON, MAX_ITERATIONS
 
 def get_standard_vi_norms(env, V_star, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS):
     nS = env.observation_space.n
@@ -24,7 +21,7 @@ def get_standard_vi_norms(env, V_star, gamma=GAMMA, epsilon=EPSILON, max_iters=M
         for s in range(nS):
             action_values = np.zeros(nA)
             for a in range(nA):
-                for prob, next_state, reward, done in env.P[s][a]:
+                for prob, next_state, reward, _ in env.P[s][a]:
                     action_values[a] += prob * (reward + gamma * V_old[next_state])
             
             best_action_value = np.max(action_values)
@@ -51,7 +48,7 @@ def generate_plots(env_name, is_slippery=False):
     print(f"Running on {env_name}:")
 
 
-    V_star, iters_vi = standard_value_iteration(env=env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS)
+    V_star, iters_vi = standard_vi(env=env, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS)
     iters_std, norms_std = get_standard_vi_norms(env=env, V_star=V_star, gamma=GAMMA, epsilon=EPSILON, max_iters=MAX_ITERATIONS)
     print(f"[Standard VI] {env_name}: {iters_vi} iterations")
 
@@ -92,7 +89,7 @@ def generate_plots(env_name, is_slippery=False):
     plt.legend()
     plt.tight_layout()
     
-    filename = f"{env_name}_convergence.png"
+    filename = f"{env_name}.png"
     plt.savefig(filename)
     plt.close()
 
