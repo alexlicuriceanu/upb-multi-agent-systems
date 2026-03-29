@@ -22,7 +22,7 @@ def evaluate_policy(env, q_table, eval_epochs=50):
         
     return np.mean(total_rewards)
 
-def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epochs=50):
+def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epochs=50, alpha_decay=0.999, min_alpha=0.01):
     env = gym.make(env_name)
     eval_env = gym.make(env_name)
     
@@ -37,6 +37,7 @@ def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eva
         state, _ = env.reset()
         done = False
         total_train_reward = 0
+        alpha_t = max(min_alpha, alpha * (alpha_decay ** (epoch - 1)))
         
         while not done:
             # epsilon-greedy action selection
@@ -54,7 +55,7 @@ def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eva
             td_target = reward + gamma * q_table[next_state, best_next_action] * (not done)
             td_error = td_target - q_table[state, action]
             
-            q_table[state, action] += alpha * td_error
+            q_table[state, action] += alpha_t * td_error
             
             total_train_reward += reward
             state = next_state
@@ -78,7 +79,18 @@ if __name__ == "__main__":
         alpha=0.1,
         gamma=0.9,
         epsilon=0.1,
-        epochs=5000,
+        epochs=30000,
         eval_freq=100
     )
-    print(f"[Taxi-v3] Final Eval Reward: {evals['avg_rewards'][-1]}")
+    print(f"[Q-Learning][Taxi-v3] Final Eval Reward: {evals['avg_rewards'][-1]}")
+
+
+    q_table, train_rwds, evals = train_q_learning(
+        env_name="FrozenLake-v1",
+        alpha=0.1,  
+        gamma=0.9,
+        epsilon=0.1,
+        epochs=30000, 
+        eval_freq=100
+    )
+    print(f"[Q-Learning][FrozenLake-v1] Final Eval Success Rate: {evals['avg_rewards'][-1] * 100}%")
