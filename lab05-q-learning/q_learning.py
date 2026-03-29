@@ -11,7 +11,11 @@ def evaluate_policy(env, q_table, eval_epochs=50):
         
         while not done:
             # always choose the action with the highest Q-value
-            action = np.argmax(q_table[state, :])
+            q_values = q_table[state, :]
+            if np.all(q_values == 0):
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(q_values)
             next_state, reward, terminated, truncated, _ = env.step(action)
             
             epoch_reward += reward
@@ -22,7 +26,7 @@ def evaluate_policy(env, q_table, eval_epochs=50):
         
     return np.mean(total_rewards)
 
-def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epochs=50, alpha_decay=0.999, min_alpha=0.01):
+def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epochs=50):
     env = gym.make(env_name)
     eval_env = gym.make(env_name)
     
@@ -37,14 +41,13 @@ def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eva
         state, _ = env.reset()
         done = False
         total_train_reward = 0
-        alpha_t = max(min_alpha, alpha * (alpha_decay ** (epoch - 1)))
         
         while not done:
             # epsilon-greedy action selection
             if np.random.uniform(0, 1) < epsilon:
                 action = env.action_space.sample() # explore
             else:
-                action = np.argmax(q_table[state, :]) # exploit
+                action = np.argmax(q_table[state, :])
                 
             # take the action
             next_state, reward, terminated, truncated, _ = env.step(action)
@@ -55,7 +58,7 @@ def train_q_learning(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eva
             td_target = reward + gamma * q_table[next_state, best_next_action] * (not done)
             td_error = td_target - q_table[state, action]
             
-            q_table[state, action] += alpha_t * td_error
+            q_table[state, action] += alpha * td_error
             
             total_train_reward += reward
             state = next_state
@@ -79,7 +82,7 @@ if __name__ == "__main__":
         alpha=0.1,
         gamma=0.9,
         epsilon=0.1,
-        epochs=30000,
+        epochs=5000,
         eval_freq=100
     )
     print(f"[Q-Learning][Taxi-v3] Final Eval Reward: {evals['avg_rewards'][-1]}")
@@ -90,7 +93,7 @@ if __name__ == "__main__":
         alpha=0.1,  
         gamma=0.9,
         epsilon=0.1,
-        epochs=30000, 
+        epochs=15000, 
         eval_freq=100
     )
     print(f"[Q-Learning][FrozenLake-v1] Final Eval Success Rate: {evals['avg_rewards'][-1] * 100}%")

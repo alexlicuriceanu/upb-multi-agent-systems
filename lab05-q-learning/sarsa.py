@@ -11,7 +11,12 @@ def evaluate_policy(env, q_table, eval_epochs=50):
         
         while not done:
             # always choose the action with the highest Q-value
-            action = np.argmax(q_table[state, :])
+            q_values = q_table[state, :]
+            if np.all(q_values == 0):
+                action = env.action_space.sample() # Randomly break tie if table is empty
+            else:
+                action = np.argmax(q_values)
+
             next_state, reward, terminated, truncated, _ = env.step(action)
             
             epoch_reward += reward
@@ -22,7 +27,7 @@ def evaluate_policy(env, q_table, eval_epochs=50):
         
     return np.mean(total_rewards)
 
-def train_sarsa(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epochs=50, alpha_decay=0.999, min_alpha=0.01):
+def train_sarsa(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epochs=50):
     env = gym.make(env_name)
     eval_env = gym.make(env_name)
     
@@ -37,7 +42,6 @@ def train_sarsa(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epo
         state, _ = env.reset()
         done = False
         total_train_reward = 0
-        alpha_t = max(min_alpha, alpha * (alpha_decay ** (epoch - 1)))
         
         # in SARSA, we choose the first action before entering the loop
         if np.random.uniform(0, 1) < epsilon:
@@ -60,7 +64,7 @@ def train_sarsa(env_name, alpha, gamma, epsilon, epochs, eval_freq=100, eval_epo
             td_target = reward + gamma * q_table[next_state, next_action] * (not done)
             td_error = td_target - q_table[state, action]
             
-            q_table[state, action] += alpha_t * td_error
+            q_table[state, action] += alpha * td_error
             
             total_train_reward += reward
             state = next_state
@@ -85,7 +89,7 @@ if __name__ == "__main__":
         alpha=0.1,
         gamma=0.9,
         epsilon=0.1,
-        epochs=30000,
+        epochs=5000,
         eval_freq=100
     )
     print(f"[SARSA][Taxi-v3] Final Eval Reward: {evals['avg_rewards'][-1]}")
@@ -95,8 +99,8 @@ if __name__ == "__main__":
         alpha=0.1,  
         gamma=0.9,
         epsilon=0.1,
-        epochs=30000, 
+        epochs=15000, 
         eval_freq=100
     )
-    print(f"[SARSA][FrozenLake-v1] Final Eval Reward: {evals['avg_rewards'][-1] * 100:.2f}%")
+    print(f"[SARSA][FrozenLake-v1] Final Eval Success Rate: {evals['avg_rewards'][-1] * 100:.2f}%")
     
