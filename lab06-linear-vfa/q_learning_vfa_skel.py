@@ -166,7 +166,7 @@ if __name__ == '__main__':
         'activation': 'sigmoid',
         'lr': 0.0005,
         'epsilon': 0.1,
-        'decay': False
+        'decay': True
     }
 
     estimator = Estimator(

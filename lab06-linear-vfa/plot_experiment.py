@@ -72,4 +72,9 @@ if __name__ == '__main__':
     parser.add_argument('dump', metavar='DUMP', type=Path, help='Path to the experiment JSON dump file')
     args = parser.parse_args()
 
-    plot_experiment(args.dump)
+    if args.dump.is_dir():
+        # If the user provided a directory, find all JSON files in that directory and plot them
+        for dump_file in args.dump.glob('*.json'):
+            plot_experiment(dump_file)
+    else:
+        plot_experiment(args.dump)
