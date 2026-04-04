@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -25,8 +27,11 @@ class Estimator(object):
 
         ## TODO 1: Implement the estimator
         self.criterion = torch.nn.MSELoss()
-        self.model = None
-        # self.model = ...
+        self.model = torch.nn.Sequential(
+            torch.nn.Linear(state_dim, hidden_dim),
+            activation,
+            torch.nn.Linear(hidden_dim, action_dim)
+        )
         ## END TODO
         
         self._initialize_weights_and_bias(state_dim, hidden_dim)
@@ -61,7 +66,7 @@ class Estimator(object):
 def select_action(state, epsilon, model):
     ## TODO 2: Implement the epsilon-greedy policy
     action = env.action_space.sample()
-    # action = ...
+    action = np.argmax(model.predict(state)).item() if random.random() > epsilon else action
     ## END TODO
     return action
             
@@ -96,25 +101,25 @@ def q_learning(
 
             # TODO 3: Implement the Q-learning update rule, using the model.predict and model.update functions
             # predict the q values for the current state
-            # q_values = ...
+            q_values = model.predict(state)
 
             # If the episode is done, the q value for the action taken should be the reward
             if done:
-                # q_values = ...
+                q_values[action] = reward
                 
                 # compute the loss using the model.update() method which also updates the model
-                # loss = ...
+                loss = model.update(state, q_values)
                 total_loss.append(loss)
                 break
             
             # otherwise, predict the q values for the next state and use them as the TD target for the update
-            # q_values_next = ...
+            q_values_next = model.predict(next_state)
             
             # Set the q value for the action taken to the TD target
-            # q_values[action] = reward + gamma * torch.max(q_values_next).item()
+            q_values[action] = reward + gamma * torch.max(q_values_next).item()
             
             # compute the loss using the model.update() which also updates the model
-            # loss = ...
+            loss = model.update(state, q_values)
             total_loss.append(loss)
 
             state = next_state
@@ -183,6 +188,7 @@ if __name__ == '__main__':
     # dump the spec dict into a key value string
     spec_str = '_'.join([f'{k}={v}' for k, v in spec.items()])
 
+    os.makedirs('dumps', exist_ok=True)
     with open(f'dumps/experiment_{spec_str}.json', 'wt') as f:
         json.dump({
             'reward': reward,
