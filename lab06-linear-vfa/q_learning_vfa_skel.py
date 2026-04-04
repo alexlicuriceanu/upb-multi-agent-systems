@@ -38,14 +38,15 @@ class Estimator(object):
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr = lr)
 
-    def _initialize_weights_and_bias(self, state_dim = 4, hidden_dim = 100):
-        # Initialize the weights and biases of the first layer
-        # the first weight is a state_dim x hidden_dim matrix. 
-        # Initialize each row with a normal distribution with mean 0 and standard deviation sqrt((i+1) * 0.5), where i is the row index.
-        # the bias is uniformly distributed between 0 and 2 pi
-        for i in range(state_dim):
-            torch.nn.init.normal_(self.model[0].weight[i], mean = 0, std = np.sqrt((i+1) * 0.5))
-        torch.nn.init.uniform_(self.model[0].bias, a = 0, b = 2 * np.pi)
+    def _initialize_weights_and_bias(self, state_dim=4, hidden_dim=100):
+        gammas = [5.0, 2.0, 1.0, 0.5]
+        
+        with torch.no_grad():
+            for k in range(state_dim):
+                std_dev = np.sqrt(2 * gammas[k])
+                torch.nn.init.normal_(self.model[0].weight[:, k], mean=0, std=std_dev)
+                
+            torch.nn.init.uniform_(self.model[0].bias, a=0, b=2 * np.pi)
         
     def update(self, state, y):
         y_pred = self.model(torch.Tensor(state))
@@ -163,10 +164,10 @@ if __name__ == '__main__':
         'gamma': 1.0,
         
         # to experiment with
-        'activation': 'sigmoid',
+        'activation': 'cos',
         'lr': 0.0005,
         'epsilon': 0.1,
-        'decay': True
+        'decay': False
     }
 
     estimator = Estimator(
