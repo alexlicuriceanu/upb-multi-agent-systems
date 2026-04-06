@@ -164,10 +164,11 @@ if __name__ == '__main__':
         'gamma': 1.0,
         
         # to experiment with
-        'activation': 'cos',
+        'activation': 'sigmoid',
         'lr': 0.0005,
         'epsilon': 0.1,
-        'decay': False
+        'decay': True,
+        'eps_decay': 0.99
     }
 
     estimator = Estimator(
@@ -183,7 +184,9 @@ if __name__ == '__main__':
         spec['episodes'],
         gamma = spec['gamma'],
         epsilon = spec['epsilon'],
-        decay = spec['decay']
+        decay = spec['decay'],
+        eps_decay = spec['eps_decay']
+
     )
 
     # dump the spec dict into a key value string
