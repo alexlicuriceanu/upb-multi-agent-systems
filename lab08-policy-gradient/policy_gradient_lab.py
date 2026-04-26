@@ -88,7 +88,7 @@
 
 # ## Setup and Imports
 
-# In[1]:
+# In[126]:
 
 
 import torch
@@ -103,6 +103,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 
 from typing import Tuple, List
+
+import random
+from collections import deque
+import os
 
 # Set random seeds for reproducibility
 torch.manual_seed(42)
@@ -123,7 +127,7 @@ np.random.seed(42)
 # - Hidden: 128 neurons with ReLU
 # - Output: scalar value estimate
 
-# In[2]:
+# In[127]:
 
 
 class PolicyNetwork(nn.Module):
@@ -156,7 +160,7 @@ class ValueNetwork(nn.Module):
 
 # ## Helper Functions
 
-# In[3]:
+# In[128]:
 
 
 def select_action(policy: nn.Module, state: np.ndarray, device: str = 'cpu') -> Tuple[int, Tensor]:
@@ -221,7 +225,7 @@ def compute_returns(rewards: List[float], gamma: float = 0.99) -> Tensor:
 # - Loss is negative because we want to maximize, not minimize
 # - The episode collection loop is provided; focus on the update section
 
-# In[4]:
+# In[129]:
 
 
 def train_reinforce(
@@ -318,7 +322,7 @@ def train_reinforce(
 # - TD error should be detached when used for actor update
 # - The step loop is provided; focus on the update section
 
-# In[5]:
+# In[130]:
 
 
 def train_actor_critic(
@@ -371,8 +375,13 @@ def train_actor_critic(
             
             # Step 2: Compute value estimates using critic
             value = critic(state_tensor)
-            next_value = critic(next_state_tensor)
             
+            with torch.no_grad():
+                if terminated:
+                    next_value = torch.tensor([[0.0]]).to(device)
+                else:
+                    next_value = critic(next_state_tensor)
+
             # Step 3: Compute TD error (advantage estimate)
             # FORMULA: δ = r + γV(s') - V(s)
             td_error = reward + gamma * next_value - value
@@ -381,15 +390,20 @@ def train_actor_critic(
             critic_loss = td_error ** 2
             critic_optimizer.zero_grad()
             critic_loss.backward()
+
+            nn.utils.clip_grad_norm_(critic.parameters(), max_norm=1.0)
             critic_optimizer.step()
+
             
             # Step 5: Update actor using policy gradient
             # CRITICAL: Use .detach() on td_error!
             actor_loss = -log_prob * td_error.detach()
             actor_optimizer.zero_grad()
             actor_loss.backward()
+
+            nn.utils.clip_grad_norm_(actor.parameters(), max_norm=1.0)
             actor_optimizer.step()
-            
+
             # END TODO
             
             state = next_state
@@ -423,7 +437,7 @@ def train_actor_critic(
 # - Which has lowest variance?
 # - Which achieves best final performance?
 
-# In[6]:
+# In[131]:
 
 
 # Setup
@@ -437,7 +451,7 @@ action_dim = env_cartpole.action_space.n
 print(f"CartPole - State dim: {state_dim}, Action dim: {action_dim}")
 
 
-# In[9]:
+# In[ ]:
 
 
 # TODO: Task 3 - CartPole Experiments
@@ -458,20 +472,43 @@ env_cartpole.action_space.seed(SEED)
 # For now, we'll use a placeholder
 # ddqn_rewards = None  # Replace with your DDQN results
 
-# Part 2: Train REINFORCE on CartPole
-print("\n" + "="*50)
-print("Training REINFORCE on CartPole...")
-print("="*50)
+# Part 1: Train DDQN on CartPole
+# print("\n" + "="*50)
+# print("Training DDQN on CartPole...")
+# print("="*50)
 
-reinforce_policy_cartpole = PolicyNetwork(state_dim, action_dim).to(device)
-reinforce_rewards_cartpole = train_reinforce(
-    env=env_cartpole,
-    policy=reinforce_policy_cartpole,
-    num_episodes=1000,
-    lr=0.01,
-    gamma=0.99,
-    device=device
-)
+# ddqn_rewards = train_ddqn(
+#     env=env_cartpole,
+#     num_episodes=1000,
+#     lr=0.001,
+#     gamma=0.99,
+#     batch_size=64,
+#     eps_decay_steps=10000,
+#     learning_freq=4,
+#     target_update_freq=1000,
+#     device=device
+# )
+
+# env_cartpole.reset(seed=SEED)
+# env_cartpole.action_space.seed(SEED)
+
+# # Part 2: Train REINFORCE on CartPole
+# print("\n" + "="*50)
+# print("Training REINFORCE on CartPole...")
+# print("="*50)
+
+# reinforce_policy_cartpole = PolicyNetwork(state_dim, action_dim).to(device)
+# reinforce_rewards_cartpole = train_reinforce(
+#     env=env_cartpole,
+#     policy=reinforce_policy_cartpole,
+#     num_episodes=1000,
+#     lr=0.01,
+#     gamma=0.99,
+#     device=device
+# )
+
+# env_cartpole.reset(seed=SEED)
+# env_cartpole.action_space.seed(SEED)
 
 # Part 3: Train Actor-Critic on CartPole
 print("\n" + "="*50)
@@ -492,6 +529,11 @@ ac_rewards_cartpole = train_actor_critic(
 )
 
 print("\nCartPole training complete!")
+
+os.makedirs('results', exist_ok=True)
+# np.save('results/ddqn_cartpole_rewards.npy', ddqn_rewards)
+# np.save('results/reinforce_cartpole_rewards.npy', reinforce_rewards_cartpole)
+np.save('results/ac_cartpole_rewards.npy', ac_rewards_cartpole)
 
 
 # ## Task 4: Acrobot Experiments
@@ -652,7 +694,11 @@ def plot_comparison(ddqn_rewards, reinforce_rewards, ac_rewards, env_name: str):
 
 
 # Plot CartPole results
-# plot_comparison(ddqn_rewards, reinforce_rewards_cartpole, ac_rewards_cartpole, "CartPole-v1")
+ddqn_rewards = np.load('./results/ddqn_cartpole_rewards.npy').tolist()
+reinforce_rewards_cartpole = np.load('./results/reinforce_cartpole_rewards.npy').tolist()
+ac_rewards_cartpole = np.load('./results/ac_cartpole_rewards.npy').tolist()
+
+plot_comparison(ddqn_rewards, reinforce_rewards_cartpole, ac_rewards_cartpole, "CartPole-v1")
 
 
 # ## Results: Acrobot Comparison
