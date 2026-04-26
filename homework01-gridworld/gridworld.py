@@ -71,7 +71,7 @@ class Gridworld:
 
     def render(self):
         """Prints the current state of the gridworld."""
-        
+
         grid = [['.' for _ in range(self.cols)] for _ in range(self.rows)]
         
         # Mark obstacles
@@ -106,3 +106,5 @@ if __name__ == "__main__":
 
         if done:
             break
+
+    env.render()
