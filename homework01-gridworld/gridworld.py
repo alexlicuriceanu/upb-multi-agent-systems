@@ -1,29 +1,28 @@
 class Gridworld:
     def __init__(self, grid_type='A', use_diagonals=False):
-        # Define Grid Dimensions
+        # dimensions
         self.rows = 7  
         self.cols = 10 
         
-        # Define Start and Goal States
+        # start and goal states
         self.start_state = (3, 0)
         self.goal_state = (3, 7)
         self.current_state = self.start_state
         
         self.grid_type = grid_type
         
-        # Define Gridworld A Obstacles
+        # obstacles
         self.obstacles = [(1, 5), (2, 5), (3, 5), (4, 5)] 
         
-        # Define Gridworld B Wind
+        # wind
         self.wind = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0] 
         
-        # Define Actions
-        # 0: Up, 1: Right, 2: Down, 3: Left
+        # actions; 0: up, 1: right; 2: down; 3: left
         self.actions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
         
-        # Add diagonal actions for task 2 
+        # add diagonal actions for task 2 
         if use_diagonals:
-            # Up-Right, 5: Down-Right, 6: Down-Left, 7: Up-Left
+            # 4: up, right; 5: down, right; 6: down, left; 7: up, left
             self.actions.extend([(-1, 1), (1, 1), (1, -1), (-1, -1)])
 
     def reset(self):
@@ -38,33 +37,31 @@ class Gridworld:
         row, col = self.current_state
         action = self.actions[action_idx]
         
-        # Calculate intended new position
+        # calculate new position
         new_row = row + action[0]
         new_col = col + action[1]
         
-        # Apply Gridworld mechanics
         if self.grid_type == 'A':
-            # Check if the intended move hits an obstacle
+            # check if we hit an obstacle
             if (new_row, new_col) in self.obstacles:
-                new_row, new_col = row, col # Stay in place if blocked
+                new_row, new_col = row, col
                 
         elif self.grid_type == 'B':
-            # Apply wind shifting the state upward
+            # shift the agent up by wind strength positions
             wind_strength = self.wind[col]
             new_row -= wind_strength
             
-        # Handle grid boundaries
+        # handle boundaries
         new_row = max(0, min(new_row, self.rows - 1))
         new_col = max(0, min(new_col, self.cols - 1))
         
         self.current_state = (new_row, new_col)
         
-        # Determine Reward and Done Flag
         if self.current_state == self.goal_state:
-            reward = 1   # Reward for reaching the goal
-            done = True  # Episode is over
+            reward = 1
+            done = True
         else:
-            reward = -1  # Constant step penalty
+            reward = -1
             done = False
             
         return self.current_state, reward, done
@@ -74,19 +71,18 @@ class Gridworld:
 
         grid = [['.' for _ in range(self.cols)] for _ in range(self.rows)]
         
-        # Mark obstacles
+        # mark obstacles
         for obs in self.obstacles:
             grid[obs[0]][obs[1]] = 'X'
         
-        # Mark start and goal states
+        # mark start and goal states
         grid[self.start_state[0]][self.start_state[1]] = 'S'
         grid[self.goal_state[0]][self.goal_state[1]] = 'G'
         
-        # Mark current state
+        # mark agent position
         if self.current_state != self.start_state and self.current_state != self.goal_state:
             grid[self.current_state[0]][self.current_state[1]] = 'A'
         
-        # Print the grid
         for row in grid:
             print(' '.join(row))
 
