@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from gridworld import Gridworld
 
 class SarsaAgent:
     def __init__(self, env, alpha=0.1, epsilon=0.1, gamma=1.0):
@@ -12,8 +13,6 @@ class SarsaAgent:
         self.epsilon = epsilon
         self.gamma = gamma
         self.num_actions = len(env.actions)
-        
-        # initialize Q-table with zeros. 
         self.q_table = np.zeros((env.rows, env.cols, self.num_actions))
 
     def choose_action(self, state):
@@ -42,7 +41,7 @@ class SarsaAgent:
         # get the current Q-value
         current_q = self.q_table[r, c, action]
         
-        # get the Q-value for the actual NEXT action chosen by the policy
+        # get the Q-value for the actual next action chosen by the policy
         next_q = self.q_table[next_r, next_c, next_action]
         
         # calculate the new Q-value
@@ -60,8 +59,6 @@ class SarsaAgent:
         
         for episode in range(episodes):
             state = self.env.reset()
-            
-            # choose the first action before entering the loop
             action = self.choose_action(state)
             
             done = False
@@ -87,15 +84,9 @@ class SarsaAgent:
             
         return steps_per_episode
 
-if __name__ == "__main__":
-    from gridworld import Gridworld
-    
-    # create the environment and agent
+if __name__ == "__main__":   
     env = Gridworld(grid_type='A', use_diagonals=False)
     agent = SarsaAgent(env=env, alpha=0.1, epsilon=0.1, gamma=1.0)
-    
-    # train the agent
     episode_steps = agent.train(episodes=500)
     
-    # print performance data
     print("Steps per episode:", episode_steps)

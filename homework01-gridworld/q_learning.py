@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from gridworld import Gridworld
 
 class QLearningAgent:
     def __init__(self, env, alpha=0.1, epsilon=0.1, gamma=1.0):
@@ -12,8 +13,6 @@ class QLearningAgent:
         self.epsilon = epsilon
         self.gamma = gamma
         self.num_actions = len(env.actions)
-        
-        # initialize Q-table with zeros. 
         self.q_table = np.zeros((env.rows, env.cols, self.num_actions))
 
     def choose_action(self, state):
@@ -83,14 +82,8 @@ class QLearningAgent:
         return steps_per_episode
 
 if __name__ == "__main__":
-    from gridworld import Gridworld
-    
-    # create the environment and agent
     env = Gridworld(grid_type='A', use_diagonals=False)
     agent = QLearningAgent(env=env, alpha=0.1, epsilon=0.1, gamma=1.0)
-    
-    # train the agent
     episode_steps = agent.train(episodes=500)
     
-    # print performance data
     print("Steps per episode:", episode_steps)
