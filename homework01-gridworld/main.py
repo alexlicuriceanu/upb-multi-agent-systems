@@ -99,7 +99,7 @@ def plot_ablation(data_dict, title, grid_type, param_name="Alpha", group_by="par
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     filename = f"task1_{group_by.lower()}_{param_name.lower()}_{grid_type}.png"
 
-    plt.savefig(os.path.join(OUTPUT_DIR, filename), dpi=400)
+    plt.savefig(os.path.join(OUTPUT_DIR, filename), dpi=200)
 
 
 def plot_comparison(results_dict, title="Performance Comparison", window_size=20):
@@ -133,7 +133,7 @@ def plot_comparison(results_dict, title="Performance Comparison", window_size=20
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    plt.savefig(os.path.join(OUTPUT_DIR, f"task2_comparison.png"), dpi=400)
+    plt.savefig(os.path.join(OUTPUT_DIR, f"task2_comparison.png"), dpi=200)
 
 
 def run_task_1():    
