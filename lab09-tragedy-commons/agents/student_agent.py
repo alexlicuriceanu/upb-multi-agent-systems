@@ -10,6 +10,7 @@ class StudentAgent(CommonsAgent):
         self.current_proposed_share = None
 
     def specify_share(self, perception: CommonsPerception) -> float:
+        ## TODO: return the share that this agent wants to consume at a start of a environment turn
         num_agents = perception.num_agents
         fair_share = self.target_total_share / num_agents
         
@@ -21,7 +22,13 @@ class StudentAgent(CommonsAgent):
 
     def negotiation_response(self, negotiation_round: int, perception: CommonsPerception,
                              utility_func: Callable[[float, float, List[float]], float]) -> AgentAction:
-        
+        # TODO: return an AgentAction, whereby the agent can specify what his revised consumption share is, as
+        # well as what he thinks other agents should consume, in the form of a consumption_adjustment dict
+        #
+        # Attention: you must pay attention to the fact the the consumption_adjustment dict may indicate altering
+        # the agent_shares in such a way that their sum is greater than 1 or smaller than 0. 
+        # You must avoid this, as it will lead to the consumption round being aborted and all agents receiving a 0 utility.
+
         num_agents = perception.num_agents
         fair_share = self.target_total_share / num_agents
         
@@ -56,4 +63,5 @@ class StudentAgent(CommonsAgent):
                            consumption_adjustment=adjustments, no_action=False)
 
     def inform_round_finished(self, negotiation_round: int, perception: CommonsPerception):
+        ## information sent to the agent once the current round (including all adjustment rounds) is finished
         self.current_proposed_share = perception.resource_shares[self.id]
