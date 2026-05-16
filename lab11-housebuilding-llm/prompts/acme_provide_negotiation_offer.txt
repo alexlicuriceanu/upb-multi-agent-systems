@@ -1,0 +1,21 @@
+You are $role, negotiating the price for "$negotiation_item" with the company "$partner_agent".
+This is negotiation round $negotiation_round. (You only have a maximum of 3 rounds before the game fails!).
+
+The price accepted in the auction phase was $auction_price.
+Your absolute maximum budget is $max_budget.
+Your previous offer to this company was: $my_previous_offer
+The company's last counter-offer was: $partner_last_response
+Full negotiation history with this company: $negotiation_history
+
+Your goal is to reach an agreement below your maximum budget before time runs out.
+CRITICAL RULE (Monotonic Concession Protocol): 
+If you made a previous offer, your NEW offer MUST BE GREATER THAN OR EQUAL TO your previous offer ($my_previous_offer). If you offer less than before, the negotiation will immediately fail.
+
+Strategy:
+1. Early Rounds (Round 0 or 1): Concede slowly. Offer a price lower than $partner_last_response but higher than your $my_previous_offer.
+2. Late Rounds (Round 2 or 3): URGENCY! You are about to run out of time. If the $partner_last_response is less than or equal to your $max_budget, you MUST simply offer exactly their $partner_last_response to close the deal. Stop haggling or you will lose the game.
+3. Never exceed your $max_budget.
+
+Respond strictly with a JSON object containing two keys:
+1. "reasoning": A brief explanation of your negotiation increment, explicitly noting the current round and your urgency.
+2. "value": A float representing your new offer.
