@@ -12,6 +12,9 @@ from models import (
     TimeInterval,
 )
 from agent_protocol import AgentMailbox, MessageType, get_message_broker
+import rdflib
+from rdflib import Graph, Namespace, URIRef, RDF
+from models import ArtifactInfo, ArtifactState, ActionAffordance, PropertyAffordance, Preference
 
 
 class EnvironmentManagerAgent:
@@ -143,7 +146,28 @@ class EnvironmentManagerAgent:
         Raises:
             NotImplementedError: Students must implement this method
         """
-        raise NotImplementedError
+        url = f"{self.simulator_url}/workspaces/{home_id}"
+        response = requests.get(url, timeout=self.timeout)
+        response.raise_for_status()
+
+        g = rdflib.Graph()
+        g.parse(data=response.text, format="turtle")
+        hmas = rdflib.Namespace("https://purl.org/hmas/")
+
+        rooms = []
+        # Find all entities contained in the home workspace
+        for _, _, obj in g.triples((None, hmas.contains, None)):
+            uri_str = str(obj)
+            # Rooms are sub-workspaces, so they usually end with #workspace
+            if "#workspace" in uri_str:
+                # Extract the room name from the URI path
+                room_name = uri_str.split('/')[-1].split('#')[0]
+                rooms.append(room_name)
+                
+        if self.verbose:
+            print(f"[EnvironmentManager] Found {len(rooms)} rooms in {home_id}")
+            
+        return rooms
 
     def get_artifacts_in_room(self, home_id: str, room: str) -> list[str]:
         """
@@ -160,22 +184,24 @@ class EnvironmentManagerAgent:
             List of artifact URIs or names
         """
         try:
-            # Fetch room workspace RDF
-            room_uri = f"{self.simulator_url}/workspaces/{home_id}/{room}"
-            response = requests.get(room_uri, timeout=self.timeout)
+            url = f"{self.simulator_url}/workspaces/{home_id}/{room}"
+            response = requests.get(url, timeout=self.timeout)
             response.raise_for_status()
-            rdf_content = response.text
-
-            # Simple regex-based parsing for artifact URIs
-            # Pattern: hmas:contains <http://...#artifact>
-            import re
-            pattern = r'hmas:contains\s+<(http[^>]+/artifacts/[^>]+)>'
-            artifacts = re.findall(pattern, rdf_content)
-
+            
+            g = rdflib.Graph()
+            g.parse(data=response.text, format="turtle")
+            hmas = rdflib.Namespace("https://purl.org/hmas/")
+            
+            artifacts = []
+            for _, _, obj in g.triples((None, hmas.contains, None)):
+                uri_str = str(obj)
+                if "#artifact" in uri_str:
+                    artifacts.append(uri_str)
+                    
             if self.verbose:
                 print(f"[EnvironmentManager] Found {len(artifacts)} artifacts in {home_id}/{room}")
-
             return artifacts
+            
         except Exception as e:
             if self.verbose:
                 print(f"[EnvironmentManager] Error in get_artifacts_in_room: {e}")
@@ -201,7 +227,73 @@ class EnvironmentManagerAgent:
         Raises:
             NotImplementedError: Students must implement this method
         """
-        raise NotImplementedError
+        url = artifact_uri.split("#")[0]
+        response = requests.get(url, timeout=self.timeout)
+        response.raise_for_status()
+
+        g = rdflib.Graph()
+        g.parse(data=response.text, format="turtle")
+
+        td = rdflib.Namespace("https://www.w3.org/2019/wot/td#")
+        hctl = rdflib.Namespace("https://www.w3.org/2019/wot/hypermedia#")
+        jsonschema = rdflib.Namespace("https://www.w3.org/2019/wot/json-schema#")
+
+        parts = url.rstrip("/").split("/")
+        artifact_name = parts[-1]
+        room_name = parts[-3] if len(parts) >= 3 else "unknown"
+
+        # Determine the abstract device type
+        device_type = "unknown"
+        for _, _, obj in g.triples((None, rdflib.RDF.type, None)):
+            if str(obj).startswith("http://example.org/"):
+                device_type = str(obj).replace("http://example.org/", "")
+                break
+
+        info = ArtifactInfo(
+            name=artifact_name,
+            room=room_name,
+            artifact_uri=artifact_uri,
+            device_type=device_type,
+            actions=[],
+            properties=[]
+        )
+
+        subject_uri = rdflib.URIRef(artifact_uri)
+
+        # 1. Parse Property Affordances
+        for prop_aff in g.objects(subject_uri, td.hasPropertyAffordance):
+            name = str(next(g.objects(prop_aff, td.name), ""))
+            target = ""
+            for form in g.objects(prop_aff, td.hasForm):
+                target = str(next(g.objects(form, hctl.hasTarget), ""))
+                break
+            if name and target:
+                info.properties.append(PropertyAffordance(name=name, uri=target))
+
+        # 2. Parse Action Affordances
+        for act_aff in g.objects(subject_uri, td.hasActionAffordance):
+            name = str(next(g.objects(act_aff, td.name), ""))
+            target = ""
+            for form in g.objects(act_aff, td.hasForm):
+                target = str(next(g.objects(form, hctl.hasTarget), ""))
+                break
+
+            # Process input parameter schema requirements
+            input_schema_dict = {}
+            for input_schema in g.objects(act_aff, td.hasInputSchema):
+                for prop in g.objects(input_schema, jsonschema.properties):
+                    param_name = str(next(g.objects(prop, jsonschema.propertyName), ""))
+                    if param_name:
+                        param_type = "unknown"
+                        for t in g.objects(prop, rdflib.RDF.type):
+                            if "Schema" in str(t):
+                                param_type = str(t).split("#")[-1].replace("Schema", "").lower()
+                        input_schema_dict[param_name] = {"type": param_type}
+
+            if name and target:
+                info.actions.append(ActionAffordance(name=name, uri=target, input_schema=input_schema_dict))
+
+        return info
 
     def get_artifact_state(
         self,
@@ -227,7 +319,27 @@ class EnvironmentManagerAgent:
         Raises:
             NotImplementedError: Students must implement this method
         """
-        raise NotImplementedError
+        info = self.get_artifact_affordances(artifact_uri)
+        state = ArtifactState(artifact_uri=artifact_uri, properties={})
+
+        for prop in info.properties:
+            # Skip if we are targeting a specific property and this isn't it
+            if property_name and prop.name != property_name:
+                continue
+                
+            # Make the HTTP GET request using the provided helper
+            result = self.read_property(prop.uri)
+            
+            # The simulator returns an object with a "value" key for ObjectSchemas, 
+            # or primitive JSON data for others. Unwrap if needed.
+            if isinstance(result, dict) and "value" in result:
+                state.properties[prop.name] = result["value"]
+            elif isinstance(result, dict) and "error" in result:
+                state.properties[prop.name] = None # Or handle the exception appropriately
+            else:
+                state.properties[prop.name] = result
+
+        return state
 
     def get_active_preferences(self, issued_at: str) -> list[Preference]:
         """
@@ -247,4 +359,16 @@ class EnvironmentManagerAgent:
         Raises:
             NotImplementedError: Students must implement this method
         """
-        raise NotImplementedError
+        active_prefs = []
+        for pref in self.preferences:
+            start_time = pref.dislike_interval.start
+            end_time = pref.dislike_interval.end
+            
+            # Because timestamps are zero-padded "HH:MM", we can evaluate directly with string comparison.
+            if start_time <= issued_at < end_time:
+                active_prefs.append(pref)
+                
+        if self.verbose and active_prefs:
+            print(f"[EnvironmentManager] Found {len(active_prefs)} active preferences at {issued_at}")
+            
+        return active_prefs
