@@ -107,7 +107,7 @@ def main():
     time.sleep(AGENT_STARTUP_DELAY)
 
     # Create RequestSolver (uses agent communication protocol)
-    solver = FullContextSolver(env_manager, llm_client, verbose=VERBOSE)
+    solver = SequentialSolver(env_manager, llm_client, verbose=VERBOSE)
     print(f"✓ {type(solver).__name__} created")
 
     if VERBOSE:
