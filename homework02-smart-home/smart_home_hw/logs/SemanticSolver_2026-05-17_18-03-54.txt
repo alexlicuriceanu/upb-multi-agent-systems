@@ -1,0 +1,82 @@
+
+============================================================
+[1/36] Request ID: home59_one_526
+User Input: 'Increase the brightness of the light in the corridor by 66%.'
+Time: 12:30 | Home: home59
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "error_input",
+    "affordance": null,
+    "params": {},
+    "test": {}
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "adjust_property",
+    "room": "corridor",
+    "device_type": "Light",
+    "property_name": "brightness",
+    "value": 66
+  }
+]
+
+[SemanticSolver] Blocked by preference: Light in corridor
+
+============================================================
+[2/36] Request ID: home12_one_221
+User Input: 'Set the dehumidifiers in the guest bedroom to auto mode.'
+Time: 07:45 | Home: home12
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers/set_mode",
+    "params": {
+      "mode": "auto"
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers/properties/mode",
+      "expected_value": "auto"
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "set_property",
+    "room": "guest_bedroom",
+    "device_type": "Dehumidifiers",
+    "property_name": "state",
+    "value": "auto"
+  }
+]
+
+[SemanticSolver] Affordance for state not found on http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers#artifact
+
+============================================================
+[3/36] Request ID: home65_one_403
+User Input: 'Set the intensity of the aromatherapy in the foyer to 50%.'
+Time: 08:15 | Home: home65
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home65/foyer/artifacts/foyerAromatherapy/set_intensity",
+    "params": {
+      "intensity": 50
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home65/foyer/artifacts/foyerAromatherapy/properties/intensity",
+      "expected_value": 50
+    }
+  }
+]
+============================================================

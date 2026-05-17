@@ -1,0 +1,324 @@
+
+============================================================
+[1/36] Request ID: home59_one_526
+User Input: 'Increase the brightness of the light in the corridor by 66%.'
+Time: 12:30 | Home: home59
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "error_input",
+    "affordance": null,
+    "params": {},
+    "test": {}
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {"type": "adjust_property", "room": "corridor", "device_type": "Light", "property_name": "brightness", "value": 66}
+]
+
+[SemanticSolver] Blocked by preference: Light in corridor
+
+============================================================
+[2/36] Request ID: home12_one_221
+User Input: 'Set the dehumidifiers in the guest bedroom to auto mode.'
+Time: 07:45 | Home: home12
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers/set_mode",
+    "params": {
+      "mode": "auto"
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers/properties/mode",
+      "expected_value": "auto"
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "set_property",
+    "room": "guest_bedroom",
+    "device_type": "Dehumidifiers",
+    "property_name": "mode",
+    "value": "auto"
+  }
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers/set_mode with {'mode': 'auto'}
+
+============================================================
+[3/36] Request ID: home65_one_403
+User Input: 'Set the intensity of the aromatherapy in the foyer to 50%.'
+Time: 08:15 | Home: home65
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home65/foyer/artifacts/foyerAromatherapy/set_intensity",
+    "params": {
+      "intensity": 50
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home65/foyer/artifacts/foyerAromatherapy/properties/intensity",
+      "expected_value": 50
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {"type": "set_property", "room": "foyer", "device_type": "Aromatherapy", "property_name": "intensity", "value": 50}
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home65/foyer/artifacts/foyerAromatherapy/set_intensity with {'intensity': 50}
+
+============================================================
+[4/36] Request ID: home71_one_101
+User Input: 'Increase the air conditioner temperature in the guest bedroom by 6 degrees.'
+Time: 11:45 | Home: home71
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "error_input",
+    "affordance": null,
+    "params": {},
+    "test": {}
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "adjust_property",
+    "room": "guest_bedroom",
+    "device_type": "AirConditioner",
+    "property_name": "temperature",
+    "value": 6
+  }
+]
+
+[SemanticSolver] Blocked by preference: AirConditioner in guest_bedroom
+
+============================================================
+[5/36] Request ID: home70_one_397
+User Input: 'Raise the curtain in the study room by 30 percent.'
+Time: 13:00 | Home: home70
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home70/study_room/artifacts/studyRoomCurtain/set_degree",
+    "params": {
+      "degree": 30
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home70/study_room/artifacts/studyRoomCurtain/properties/degree",
+      "expected_value": 30
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "adjust_property",
+    "room": "study_room",
+    "device_type": "Curtain",
+    "property_name": "swing",
+    "value": 30
+  }
+]
+
+[SemanticSolver] State uninitialized for swing, defaulting to 0 for adjustment.
+[SemanticSolver] Affordance for swing not found on http://localhost:8080/workspaces/home70/study_room/artifacts/studyRoomCurtain#artifact
+
+============================================================
+[6/36] Request ID: home1_one_102
+User Input: 'Set the interval of the aromatherapy device to 50 in the master bedroom.'
+Time: 14:20 | Home: home1
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home1/master_bedroom/artifacts/masterBedroomAromatherapy/set_interval",
+    "params": {
+      "interval": 50
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home1/master_bedroom/artifacts/masterBedroomAromatherapy/properties/interval",
+      "expected_value": 50
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "set_property",
+    "room": "master_bedroom",
+    "device_type": "Aromatherapy",
+    "property_name": "interval",
+    "value": 50
+  }
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home1/master_bedroom/artifacts/masterBedroomAromatherapy/set_interval with {'interval': 50}
+
+============================================================
+[7/36] Request ID: home32_one_227
+User Input: 'Set the curtain degree to 50 in the living room.'
+Time: 15:30 | Home: home32
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home32/living_room/artifacts/livingRoomCurtain/set_degree",
+    "params": {
+      "degree": 50
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home32/living_room/artifacts/livingRoomCurtain/properties/degree",
+      "expected_value": 50
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "set_property",
+    "room": "living_room",
+    "device_type": "Curtain",
+    "property_name": "degree",
+    "value": 50
+  }
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home32/living_room/artifacts/livingRoomCurtain/set_degree with {'degree': 50}
+
+============================================================
+[8/36] Request ID: home66_one_397
+User Input: 'Decrease the brightness of the light in the corridor by 23 percent.'
+Time: 16:45 | Home: home66
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home66/corridor/artifacts/corridorLight/set_brightness",
+    "params": {
+      "brightness": 60
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home66/corridor/artifacts/corridorLight/properties/brightness",
+      "expected_value": 60
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "adjust_property",
+    "room": "corridor",
+    "device_type": "Light",
+    "property_name": "brightness",
+    "value": -23
+  }
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home66/corridor/artifacts/corridorLight/set_brightness with {'brightness': 60}
+
+============================================================
+[9/36] Request ID: home50_one_543
+User Input: 'Increase the brightness of the light in the garage by 7 percent.'
+Time: 18:00 | Home: home50
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home50/garage/artifacts/garageLight/set_brightness",
+    "params": {
+      "brightness": 90
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home50/garage/artifacts/garageLight/properties/brightness",
+      "expected_value": 90
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {"type": "adjust_property", "room": "garage", "device_type": "Light", "property_name": "brightness", "value": 7}
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home50/garage/artifacts/garageLight/set_brightness with {'brightness': 90}
+
+============================================================
+[10/36] Request ID: home75_one_312
+User Input: 'Set the brightness of the light to 80% in the study room.'
+Time: 19:15 | Home: home75
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home75/study_room/artifacts/studyRoomLight/set_brightness",
+    "params": {
+      "brightness": 80
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home75/study_room/artifacts/studyRoomLight/properties/brightness",
+      "expected_value": 80
+    }
+  }
+]
+============================================================
+[SemanticSolver] LLM Parsing Response:
+[
+  {
+    "type": "set_property",
+    "room": "study_room",
+    "device_type": "Light",
+    "property_name": "brightness",
+    "value": 80
+  }
+]
+
+[SemanticSolver] Success mapping -> http://localhost:8080/workspaces/home75/study_room/artifacts/studyRoomLight/set_brightness with {'brightness': 80}
+
+============================================================
+[11/36] Request ID: home28_one_201
+User Input: 'Set the fan speed of the air conditioner to high in the guest bedroom.'
+Time: 20:30 | Home: home28
+
+EXPECTED OUTPUT (GROUND TRUTH)
+[
+  {
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home28/guest_bedroom/artifacts/guestBedroomAirConditioner/set_fan_speed",
+    "params": {
+      "fan_speed": "high"
+    },
+    "test": {
+      "property": "http://localhost:8080/workspaces/home28/guest_bedroom/artifacts/guestBedroomAirConditioner/properties/fan_speed",
+      "expected_value": "high"
+    }
+  }
+]
+============================================================

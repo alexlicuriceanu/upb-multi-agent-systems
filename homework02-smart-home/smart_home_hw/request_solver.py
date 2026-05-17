@@ -525,7 +525,255 @@ OUTPUT FORMAT MUST MATCH THIS EXACTLY:
 
 
 class SemanticSolver(RequestSolverAgent):
-    """Strategy 3: Semantic Classification - not yet implemented."""
+    """Strategy 3: Semantic Classification + Code Generation."""
+
+    def __init__(self, env_manager, llm_client, verbose: bool = False):
+        super().__init__(env_manager, llm_client)
+        self.verbose = verbose
+        self.test_counter = 0
+        
+        current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+        self.log_dir = "logs" 
+        os.makedirs(self.log_dir, exist_ok=True)
+        self.log_filename = f"{self.log_dir}/{self.__class__.__name__}_{current_time}.txt"
+        
+        if self.verbose:
+            print(f"[{self.__class__.__name__}] All logs will be saved to: {self.log_filename}")
 
     def solve(self, request: Request) -> list[ActionOutput]:
-        raise NotImplementedError("Strategy 3: Semantic Classification not yet implemented")
+        self.test_counter += 1
+        home_id = request.id.split("_")[0]
+        
+        def log_message(msg: str):
+            if self.verbose:
+                print(msg)
+            with open(self.log_filename, "a", encoding="utf-8") as log_file:
+                log_file.write(msg + "\n")
+
+        expected_dicts = [dataclasses.asdict(o) for o in request.output]
+        expected_json = json.dumps(expected_dicts, indent=2)
+
+        banner = (
+            f"\n{'='*60}\n"
+            f"[{self.test_counter}/36] Request ID: {request.id}\n"
+            f"User Input: '{request.input}'\n"
+            f"Time: {request.issued_at} | Home: {home_id}\n"
+            f"\nEXPECTED OUTPUT (GROUND TRUTH)\n"
+            f"{expected_json}\n"
+            f"{'='*60}"
+        )
+        log_message(banner)
+
+        # Pre-fetch rooms AND their devices to help the LLM map locations correctly
+        all_rooms = self.env_manager.get_rooms(home_id)
+        room_context = {}
+        for r in all_rooms:
+            artifacts = self.env_manager.get_artifacts_in_room(home_id, r)
+            dev_types = []
+            for a_uri in artifacts:
+                aff = self.env_manager.get_artifact_affordances(a_uri)
+                dev_types.append(aff.device_type)
+            if dev_types:
+                room_context[r] = dev_types
+
+        # ---------------------------------------------------------------------
+        # STEP 1: Call LLM to parse and classify sub-goals
+        # ---------------------------------------------------------------------
+        prompt = f"""
+You are a strict semantic parser for a Smart Home system.
+User Request: "{request.input}"
+Available Rooms and Devices: {json.dumps(room_context)}
+
+Classify the user's request into a strict JSON array of sub-goals.
+Each sub-goal MUST be an object with these exact keys: "type", "room", "device_type", "property_name", "value".
+
+CRITICAL VOCABULARY RULES:
+1. "type": 
+   - "Adjust TO X" or "Set TO X" is ALWAYS "set_property" (absolute).
+   - "Increase BY X", "Decrease BY X", "Raise BY X", "Lower BY X" is ALWAYS "adjust_property" (relative).
+2. "device_type": Format as PascalCase (e.g., "AirConditioner", "Heating", "Dehumidifier", "Fan", "Curtain", "Blinds", "MediaPlayer").
+   - CRITICAL: Extract the EXACT device the user asks for. If they ask for "heating", output "Heating". DO NOT convert it to "AirConditioner" even if AirConditioner is the only device in the room.
+3. "property_name": Use exact parameter names: "temperature", "brightness", "intensity", "volume", "interval", "degree", "fan_speed", "swing", "state", "mode".
+   - CRITICAL: For Curtains or Blinds (e.g., raising/lowering percentages), you MUST use "degree".
+   - For Air Conditioners changing direction, use "swing".
+4. "value": 
+   - CRITICAL: If the user uses a word like "high", "low", "middle", "auto", or "sleep", you MUST output it exactly as a string (e.g., "value": "high", "value": "middle"). DO NOT convert these to numbers like 100 or 0.
+   - If the user says "percent", "%", "seconds", "minutes", or "degrees" for an adjustment, IGNORE the unit conversion and treat it as a raw absolute numeric delta (e.g., "increase by 8 seconds" -> value: 8, "decrease by 20%" -> value: -20, "raise by 30%" -> value: 30).
+   - For states, use "on", "off", "open", "closed".
+5. AROMATHERAPY EXCEPTION: If requested to "turn off" Aromatherapy, map it as type: "set_property", property_name: "intensity", value: 0.
+6. ROOM MAPPING: 
+   - Format room names in snake_case EXACTLY as they appear in the JSON keys.
+   - If a room is explicitly stated in the text, output exactly that room.
+   - If the user omits the room entirely, DO NOT guess! Set "room": "". The system will handle the inference.
+
+Return ONLY valid JSON. Do not include markdown blocks.
+Example Output:
+[
+  {{"type": "adjust_property", "room": "study_room", "device_type": "Curtain", "property_name": "degree", "value": 30}},
+  {{"type": "set_property", "room": "", "device_type": "AirConditioner", "property_name": "swing", "value": "middle"}}
+]
+"""
+        raw_response = call_llm(self.llm_client, prompt)
+        log_message(f"[SemanticSolver] LLM Parsing Response:\n{raw_response}\n")
+
+        try:
+            clean_text = raw_response.strip()
+            if clean_text.startswith("\x60\x60\x60json"): clean_text = clean_text[7:]
+            if clean_text.startswith("\x60\x60\x60"): clean_text = clean_text[3:]
+            if clean_text.endswith("\x60\x60\x60"): clean_text = clean_text[:-3]
+            
+            sub_goals = json.loads(clean_text.strip())
+        except Exception as e:
+            log_message(f"[SemanticSolver] JSON Parsing Error: {e}")
+            return [ActionOutput(execution="error_input")]
+
+        active_prefs = self.env_manager.get_active_preferences(request.issued_at)
+        
+        final_outputs = []
+
+        # ---------------------------------------------------------------------
+        # STEP 2 & 3: Iterate through parsed goals and generate imperative logic
+        # ---------------------------------------------------------------------
+        for goal in sub_goals:
+            target_room = goal.get("room", "")
+            device_type = goal.get("device_type", "")
+            prop_name = goal.get("property_name", "")
+            action_type = goal.get("type")
+            value = goal.get("value")
+
+            if target_room:
+                target_room = target_room.replace(" ", "_").lower()
+            else:
+                # Target room was omitted, infer it safely by finding the first match
+                for r in all_rooms:
+                    artifacts_in_r = self.env_manager.get_artifacts_in_room(home_id, r)
+                    for a_uri in artifacts_in_r:
+                        aff = self.env_manager.get_artifact_affordances(a_uri)
+                        if aff.device_type.lower() == device_type.lower() or device_type.lower() in aff.device_type.lower():
+                            target_room = r
+                            break
+                    if target_room:
+                        break
+
+            # STRICT preference matching
+            is_blocked = False
+            for pref in active_prefs:
+                pref_dev = pref.device_type.replace("_", "").lower()
+                goal_dev = device_type.replace("_", "").lower()
+                
+                if pref.room == target_room and pref_dev == goal_dev:
+                    is_blocked = True
+                    break
+            
+            if is_blocked:
+                log_message(f"[SemanticSolver] Blocked by preference: {device_type} in {target_room}")
+                final_outputs.append(ActionOutput(execution="error_input"))
+                continue
+
+            if target_room not in all_rooms:
+                log_message(f"[SemanticSolver] Room not found: {target_room}")
+                final_outputs.append(ActionOutput(execution="error_input"))
+                continue
+
+            artifacts_in_room = self.env_manager.get_artifacts_in_room(home_id, target_room)
+            
+            target_uri = None
+            target_affordances = None
+            
+            for artifact_uri in artifacts_in_room:
+                affordances = self.env_manager.get_artifact_affordances(artifact_uri)
+                if affordances.device_type.lower() == device_type.lower() or \
+                   device_type.lower() in affordances.device_type.lower():
+                    target_uri = artifact_uri
+                    target_affordances = affordances
+                    break
+
+            if not target_uri:
+                log_message(f"[SemanticSolver] Device {device_type} not found in {target_room}")
+                final_outputs.append(ActionOutput(execution="error_input"))
+                continue
+
+            # STEP 2b: Compute final value for adjustments
+            final_value = value
+            if action_type == "adjust_property":
+                current_state = self.env_manager.get_artifact_state(target_uri)
+                current_val = current_state.properties.get(prop_name)
+                
+                if current_val is None:
+                    for p_name, p_val in current_state.properties.items():
+                        if (prop_name.lower() in p_name.lower()) or \
+                           (p_name.lower() in prop_name.lower()) or \
+                           (prop_name == "degree" and "pos" in p_name.lower()) or \
+                           (prop_name == "fan_speed" and "speed" in p_name.lower()):
+                            current_val = p_val
+                            break
+                            
+                if current_val is None:
+                    current_val = 0
+                    log_message(f"[SemanticSolver] State uninitialized for {prop_name}, defaulting to 0 for adjustment.")
+                    
+                try:
+                    final_value = float(current_val) + float(value)
+                    if final_value.is_integer():
+                        final_value = int(final_value)
+                except ValueError:
+                    log_message(f"[SemanticSolver] Cannot apply math adjustment to non-numeric types")
+                    final_outputs.append(ActionOutput(execution="error_input"))
+                    continue
+
+            # STEP 2c: Find matching action affordance
+            target_action_uri = None
+            target_schema_key = None
+            
+            # Exact Match
+            for action in target_affordances.actions:
+                if prop_name in action.input_schema:
+                    target_action_uri = action.uri
+                    target_schema_key = prop_name
+                    break
+                    
+            # Safe Fallback for schemas
+            if not target_action_uri:
+                for action in target_affordances.actions:
+                    for param_name in action.input_schema.keys():
+                        if (prop_name.lower() in param_name.lower()) or \
+                           (param_name.lower() in prop_name.lower()) or \
+                           (prop_name == "degree" and "pos" in param_name.lower()) or \
+                           (prop_name == "fan_speed" and "speed" in param_name.lower()):
+                            target_action_uri = action.uri
+                            target_schema_key = param_name
+                            break
+                    if target_action_uri: break
+                    
+            # State Routing (turn_on, turn_off, open, close)
+            if not target_action_uri and prop_name == "state" and isinstance(final_value, str):
+                val_lower = final_value.lower()
+                action_map = {
+                    "on": "turn_on", "off": "turn_off", 
+                    "open": "open", "opened": "open", 
+                    "close": "close", "closed": "close"
+                }
+                target_action_name = action_map.get(val_lower)
+                    
+                if target_action_name:
+                    for action in target_affordances.actions:
+                        if target_action_name in action.uri:
+                            target_action_uri = action.uri
+                            break
+
+            if not target_action_uri:
+                log_message(f"[SemanticSolver] Affordance for {prop_name} not found on {target_uri}")
+                final_outputs.append(ActionOutput(execution="error_input"))
+                continue
+
+            # STEP 2d: Generate ActionOutput
+            params = {target_schema_key: final_value} if target_schema_key else {}
+            
+            log_message(f"[SemanticSolver] Success mapping -> {target_action_uri} with {params}")
+            final_outputs.append(ActionOutput(
+                execution="success",
+                affordance=target_action_uri,
+                params=params
+            ))
+
+        return final_outputs
