@@ -243,11 +243,16 @@ class EnvironmentManagerAgent:
         room_name = parts[-3] if len(parts) >= 3 else "unknown"
 
         # Determine the abstract device type
+        subject_uri = rdflib.URIRef(artifact_uri)
+        
+        # Determine the abstract device type specifically for this artifact
         device_type = "unknown"
-        for _, _, obj in g.triples((None, rdflib.RDF.type, None)):
+        for _, _, obj in g.triples((subject_uri, rdflib.RDF.type, None)): # <--- Change 'None' to 'subject_uri'
             if str(obj).startswith("http://example.org/"):
                 device_type = str(obj).replace("http://example.org/", "")
-                break
+                # Some TDs might have multiple example.org types, make sure we don't grab the room
+                if device_type not in ["GuestBedroom", "MasterBedroom", "LivingRoom", "Bathroom", "StudyRoom", "Garage", "Corridor", "Balcony"]:
+                    break
 
         info = ArtifactInfo(
             name=artifact_name,

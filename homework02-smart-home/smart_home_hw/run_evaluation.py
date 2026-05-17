@@ -23,6 +23,8 @@ from request_solver import RequestSolverAgent, DummyRequestSolver
 from evaluation import evaluate_single, EvaluationMetrics
 from llm_client import get_llm_client
 
+from request_solver import FullContextSolver, SequentialSolver, SemanticSolver
+
 
 SIMULATOR_URL = "http://localhost:8080"
 HOMEWORK_DIR = Path(__file__).parent.parent
@@ -105,8 +107,8 @@ def main():
     time.sleep(AGENT_STARTUP_DELAY)
 
     # Create RequestSolver (uses agent communication protocol)
-    solver = DummyRequestSolver(env_manager, llm_client, verbose=VERBOSE)
-    print("✓ DummyRequestSolver created")
+    solver = FullContextSolver(env_manager, llm_client, verbose=VERBOSE)
+    print(f"✓ {type(solver).__name__} created")
 
     if VERBOSE:
         print("✓ Verbose agent communication logging enabled")

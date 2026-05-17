@@ -1,10 +1,18 @@
 """RequestSolver agent for handling smart home requests."""
 
+import os
+import re
 import threading
+import time
 from models import Request, ActionOutput
 from environment_manager import EnvironmentManagerAgent
 from agent_protocol import AgentMailbox, MessageType, get_message_broker
+import json
+from llm_client import call_llm
+import dataclasses
 
+RUNS_DIR = "./runs"
+os.makedirs(RUNS_DIR, exist_ok=True)
 
 class RequestSolverAgent:
     """
@@ -164,21 +172,171 @@ class DummyRequestSolver(RequestSolverAgent):
 
 
 class FullContextSolver(RequestSolverAgent):
-    """Strategy 1: Full Context – not yet implemented."""
+    """Strategy 1: Full Context"""
+
+    def __init__(self, env_manager, llm_client, verbose: bool = False):
+        super().__init__(env_manager, llm_client)
+        self.verbose = verbose
+        self.test_counter = 0  # <-- Added counter for [X/36]
+        
+        # --- LOGGING SETUP: ONE FILE PER RUN ---
+        current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+        self.log_dir = "logs" 
+        os.makedirs(self.log_dir, exist_ok=True)
+        self.log_filename = f"{self.log_dir}/{self.__class__.__name__}_{current_time}.txt"
+        
+        if self.verbose:
+            print(f"[{self.__class__.__name__}] All logs will be saved to: {self.log_filename}")
 
     def solve(self, request: Request) -> list[ActionOutput]:
-        raise NotImplementedError("Strategy 1: Full Context not yet implemented")
+        self.test_counter += 1  # Increment counter for each request
+        home_id = request.id.split("_")[0]
+        
+        def log_message(msg: str):
+            """Helper to print conditionally but write to file unconditionally."""
+            if self.verbose:
+                print(msg)
+            with open(self.log_filename, "a", encoding="utf-8") as log_file:
+                log_file.write(msg + "\n")
 
+        # Extract and format the expected output (ground truth)
+        expected_dicts = [dataclasses.asdict(o) for o in request.output]
+        expected_json = json.dumps(expected_dicts, indent=2)
+
+        # 0. Log the starting banner with Test ID and Expected Output
+        banner = (
+            f"\n{'='*60}\n"
+            f"[{self.test_counter}/36] Request ID: {request.id}\n"
+            f"User Input: '{request.input}'\n"
+            f"Time: {request.issued_at} | Home: {home_id}\n"
+            f"\nEXPECTED OUTPUT (GROUND TRUTH)\n"
+            f"{expected_json}\n"
+            f"{'='*60}"
+        )
+        log_message(banner)
+
+        # 1. Gather all environment information
+        rooms = self.env_manager.get_rooms(home_id)
+        
+        environment_state = {}
+        for room in rooms:
+            artifacts = self.env_manager.get_artifacts_in_room(home_id, room)
+            room_data = []
+            for artifact_uri in artifacts:
+                affordances = self.env_manager.get_artifact_affordances(artifact_uri)
+                state = self.env_manager.get_artifact_state(artifact_uri)
+                
+                device_info = {
+                    "device_type": affordances.device_type,
+                    "uri": artifact_uri,
+                    "current_state": state.properties,
+                    "actions": [{"name": a.name, "uri": a.uri, "schema": a.input_schema} for a in affordances.actions]
+                }
+                room_data.append(device_info)
+            if room_data:
+                environment_state[room] = room_data
+
+        # 2. Get active preferences
+        active_prefs = self.env_manager.get_active_preferences(request.issued_at)
+        prefs_data = [{"device": p.device_type, "room": p.room, "reason": p.reason} for p in active_prefs]
+
+        # 3. Construct the JSON-Only Prompt
+        prompt = f"""
+You are an expert Smart Home AI mapping user requests to precise actions.
+
+User Request: "{request.input}"
+Time of Request: {request.issued_at}
+
+=== Active Constraints ===
+If a requested device and room match ANY of these constraints, the action is BLOCKED. 
+{json.dumps(prefs_data, indent=2)}
+
+=== Environment State ===
+This is the ONLY source of truth for devices in the house.
+{json.dumps(environment_state, indent=2)}
+
+=== Instructions ===
+Analyze the request and break it into sub-goals. 
+You MUST output ONLY a valid JSON array. 
+
+CRITICAL RULES:
+1. STRICT DEVICE MATCHING: If the user asks for a "fan", they mean a standalone Fan. If they ask for "heating", they mean a standalone Heating device. An AirConditioner is NOT a Fan and NOT a Heating device. If the exact requested device type is missing, fail with "error_input".
+2. STRICT PARAMETER MATCHING: You can only adjust a parameter if it explicitly exists in the device's schema. Do NOT substitute parameters (e.g., using "color" to adjust "brightness"). If the requested parameter is missing, fail with "error_input".
+3. STATELESS MATH RULE: All calculations MUST be based on the INITIAL `current_state` provided. If there are multiple sequential sub-goals for the same device (e.g., "decrease by X%, then decrease by Y%"), treat each as an INDEPENDENT calculation against the original starting state.
+4. PERCENTAGE MATH = ABSOLUTE POINTS: Treat "percent" or "%" as ABSOLUTE raw numbers. (e.g., "Decrease brightness by 23%" from 83 means 83 - 23 = 60).
+5. STRICT VOCABULARY: The "execution" key MUST be exactly "success" or "error_input".
+
+For each sub-goal, your "reasoning" key MUST follow this EXACT structure:
+"Target: [Device]. Exists: [Yes/No]. Blocked: [Yes/No]. Math: [Original State +/- Change = Final]."
+
+OUTPUT FORMAT MUST MATCH THIS EXACTLY:
+[
+  {{
+    "reasoning": "Target: Fan. Exists: No (AC cannot substitute Fan). Execution: error_input.",
+    "execution": "error_input"
+  }},
+  {{
+    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 83 - 23 = 60.",
+    "execution": "success",
+    "affordance": "action_URI",
+    "params": {{ "actual_parameter_name_from_schema": 60 }}
+  }}
+]
+"""
+
+        # 4. Call LLM
+        from llm_client import call_llm
+        raw_response = call_llm(self.llm_client, prompt)
+
+        log_message(f"[FullContextSolver] LLM Raw Response:\n{raw_response}\n")
+
+        # 5. Extract and Parse JSON
+        try:
+            clean_text = raw_response.strip()
+            if clean_text.startswith("```json"):
+                clean_text = clean_text[7:]
+            if clean_text.startswith("```"):
+                clean_text = clean_text[3:]
+            if clean_text.endswith("```"):
+                clean_text = clean_text[:-3]
+            
+            json_match = re.search(r'\[\s*\{.*\}\s*\]', clean_text.strip(), re.DOTALL)
+            
+            if not json_match:
+                log_message("[FullContextSolver] Regex failed to find JSON array.")
+                return [ActionOutput(execution="error_input")]
+                
+            clean_json = json_match.group(0)
+            parsed_outputs = json.loads(clean_json)
+            
+            final_outputs = []
+            for item in parsed_outputs:
+                if item.get("execution") == "error_input":
+                    final_outputs.append(ActionOutput(execution="error_input"))
+                else:
+                    final_outputs.append(ActionOutput(
+                        execution="success",
+                        affordance=item.get("affordance"),
+                        params=item.get("params", {})
+                    ))
+            return final_outputs
+            
+        except json.JSONDecodeError as e:
+            log_message(f"[FullContextSolver] JSON Parsing Error: {e}")
+            return [ActionOutput(execution="error_input")]
+        except Exception as e:
+            log_message(f"[FullContextSolver] Unexpected Error: {e}")
+            return [ActionOutput(execution="error_input")]
 
 class SequentialSolver(RequestSolverAgent):
-    """Strategy 2: Sequential Exploration – not yet implemented."""
+    """Strategy 2: Sequential Exploration - not yet implemented."""
 
     def solve(self, request: Request) -> list[ActionOutput]:
         raise NotImplementedError("Strategy 2: Sequential Exploration not yet implemented")
 
 
 class SemanticSolver(RequestSolverAgent):
-    """Strategy 3: Semantic Classification – not yet implemented."""
+    """Strategy 3: Semantic Classification - not yet implemented."""
 
     def solve(self, request: Request) -> list[ActionOutput]:
         raise NotImplementedError("Strategy 3: Semantic Classification not yet implemented")
