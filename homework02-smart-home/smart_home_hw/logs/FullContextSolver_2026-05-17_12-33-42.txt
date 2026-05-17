@@ -17,7 +17,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: Yes. Math: 34 + 66 = 100.",
+    "reasoning": "Target: Light. Room contains: [Light]. Exists: Yes. Blocked: Yes. Math: 34 + 66 = 100.",
     "execution": "error_input"
   }
 ]
@@ -46,7 +46,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Dehumidifiers. Exists: Yes. Blocked: No. Math: auto +/- 0 = auto.",
+    "reasoning": "Target: Dehumidifiers. Room contains: [AirConditioner, Dehumidifiers, Light, Trash]. Exists: Yes. Blocked: No. Math: mode: auto + set to auto = mode: auto.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home12/guest_bedroom/artifacts/guestBedroomDehumidifiers/set_mode",
     "params": { "mode": "auto" }
@@ -77,7 +77,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: No. Math: 99 - 49 = 50.",
+    "reasoning": "Target: Aromatherapy. Room contains: [Aromatherapy, Light]. Exists: Yes. Blocked: No. Math: 99 - 49 = 50.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home65/foyer/artifacts/foyerAromatherapy/set_intensity",
     "params": { "intensity": 50 }
@@ -103,7 +103,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: AirConditioner. Exists: Yes. Blocked: Yes. Math: 19 + 6 = 25.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, Aromatherapy, Humidifier, Light]. Exists: Yes. Blocked: Yes. Math: 19 + 6 = 25.",
     "execution": "error_input"
   }
 ]
@@ -132,7 +132,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Curtain. Exists: Yes. Blocked: No. Math: 0 + 30 = 30.",
+    "reasoning": "Target: Curtain. Room contains: [AirConditioner, Humidifier, Light]. Exists: Yes. Blocked: No. Math: 0 + 30 = 30.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home70/study_room/artifacts/studyRoomCurtain/set_degree",
     "params": { "degree": 30 }
@@ -163,7 +163,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: No. Math: 25 + 25 = 50.",
+    "reasoning": "Target: Aromatherapy. Room contains: [AirConditioner, Aromatherapy, Curtain, Humidifier, Light, MediaPlayer]. Exists: Yes. Blocked: No. Math: 25 + 25 = 50.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home1/master_bedroom/artifacts/masterBedroomAromatherapy/set_interval",
     "params": { "interval": 50 }
@@ -194,7 +194,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Curtain. Exists: Yes. Blocked: No. Math: 0 + 50 = 50.",
+    "reasoning": "Target: Curtain. Room contains: [AirConditioner, Curtain, Humidifier, Light]. Exists: Yes. Blocked: No. Math: 0 + 50 = 50.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home32/living_room/artifacts/livingRoomCurtain/set_degree",
     "params": { "degree": 50 }
@@ -225,7 +225,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 83 - 23 = 60.",
+    "reasoning": "Target: Light. Room contains: [Light]. Exists: Yes. Blocked: No. Math: 83 - 23 = 60.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home66/corridor/artifacts/corridorLight/set_brightness",
     "params": { "brightness": 60 }
@@ -256,7 +256,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 83 + 7 = 90.",
+    "reasoning": "Target: Light. Room contains: [GarageDoor, Light, Trash]. Exists: Yes. Blocked: No. Math: 83 + 7 = 90.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home50/garage/artifacts/garageLight/set_brightness",
     "params": { "brightness": 90 }
@@ -287,7 +287,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 83 - 3 = 80.",
+    "reasoning": "Target: Light. Room contains: [AirConditioner, Curtain, Humidifier, Light]. Exists: Yes. Blocked: No. Math: 83 - 3 = 80.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home75/study_room/artifacts/studyRoomLight/set_brightness",
     "params": { "brightness": 80 }
@@ -318,7 +318,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: AirConditioner (Guest Bedroom). Exists: Yes. Blocked: No. Math: low +/- high = high.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, AirPurifiers, Curtain, Humidifier, Light]. Exists: Yes. Blocked: No. Math: low -> high. Execution: success.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home28/guest_bedroom/artifacts/guestBedroomAirConditioner/set_fan_speed",
     "params": { "fan_speed": "high" }
@@ -349,7 +349,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 45 - 15 = 30.",
+    "reasoning": "Target: Light. Room contains: [AirPurifiers, Dehumidifiers, Light]. Exists: Yes. Blocked: No. Math: 45 - 15 = 30.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home56/store_room/artifacts/storeRoomLight/set_brightness",
     "params": { "brightness": 30 }
@@ -375,7 +375,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Fan. Exists: No. Blocked: Yes. Math: N/A.",
+    "reasoning": "Target: Fan. Room contains: [AirConditioner, Curtain, Humidifier, Light, Trash]. Exists: No. Blocked: No. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -399,7 +399,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Curtain. Exists: No. Blocked: Yes. Math: N/A.",
+    "reasoning": "Target: Curtain. Room contains: [AirConditioner, AirPurifiers, Humidifier, Light, Trash]. Exists: No. Blocked: No. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -423,7 +423,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: brightness N/A +/- 90 = N/A.",
+    "reasoning": "Target: Light. Room contains: [AirConditioner, Humidifier, Light, Trash]. Exists: Yes. Execution: error_input.",
     "execution": "error_input"
   }
 ]
@@ -447,7 +447,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: Yes. Math: on +/- 0 = on.",
+    "reasoning": "Target: Light. Room contains: [Aromatherapy, Light]. Exists: Yes. Blocked: Yes. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -471,7 +471,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: Yes. Math: brightness: N/A +/- 60 = N/A.",
+    "reasoning": "Target: Light. Room contains: [Light]. Exists: Yes. Blocked: Yes. Math: brightness: unknown +/- 60 = 60.",
     "execution": "error_input"
   }
 ]
@@ -495,7 +495,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Fan. Exists: No. Blocked: No. Math: N/A +/- N/A = N/A.",
+    "reasoning": "Target: Fan. Room contains: [AirConditioner, Aromatherapy, Dehumidifiers, Light, MediaPlayer]. Exists: No. Blocked: No. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -519,7 +519,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Heating. Exists: No. Blocked: Yes. Math: N/A +/- 8 = N/A. Execution: error_input.",
+    "reasoning": "Target: Heating. Room contains: [AirConditioner, AirPurifiers, Aromatherapy, Dehumidifiers, Light]. Exists: No. Execution: error_input.",
     "execution": "error_input"
   }
 ]
@@ -543,7 +543,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Dehumidifiers. Exists: Yes. Blocked: No. Math: off +/- 0 = off.",
+    "reasoning": "Target: Dehumidifiers. Room contains: [AirPurifiers, Curtain, Dehumidifiers, Fan, Heating, Light, Trash]. Exists: Yes. Blocked: No. Math: off - 0 = off.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home18/guest_bedroom/artifacts/guestBedroomDehumidifiers/turn_off",
     "params": {}
@@ -569,7 +569,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Dehumidifier. Exists: No (No exact device type 'Dehumidifier' in study_room). Blocked: Yes. Math: N/A.",
+    "reasoning": "Target: Dehumidifier. Room contains: [AirConditioner, Curtain, Humidifier, Light]. Exists: No. Blocked: No. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -593,7 +593,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Curtain. Exists: Yes. Blocked: No. Math: 0 + 40 = 40.",
+    "reasoning": "Target: Curtain. Room contains: [Aromatherapy, Fan, Heating, Humidifier, Light, Curtain]. Exists: Yes. Blocked: No. Math: 0 + 40 = 40.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home70/guest_bedroom/artifacts/guestBedroomCurtain/set_degree",
     "params": { "degree": 40 }
@@ -619,7 +619,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: MediaPlayer. Exists: Yes. Blocked: Yes. Math: N/A.",
+    "reasoning": "Target: MediaPlayer. Room contains: [Light]. Exists: No. Blocked: No. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -643,7 +643,7 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: Yes. Math: brightness parameter not present in original state; cannot compute final brightness.",
+    "reasoning": "Target: Light. Room contains: [Aromatherapy, Dehumidifiers, Fan, Heating, Light, Trash]. Exists: Yes. Blocked: No. Math: N/A.",
     "execution": "error_input"
   }
 ]
@@ -681,13 +681,13 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: AirConditioner. Exists: Yes. Blocked: No. Math: off + turnOff = off.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, AirPurifiers, Curtain, Dehumidifiers, Light, Trash]. Exists: Yes. Blocked: No. Math: off + 0 = off.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home46/guest_bedroom/artifacts/guestBedroomAirConditioner/turn_off",
     "params": {}
   },
   {
-    "reasoning": "Target: AirConditioner. Exists: Yes. Blocked: No. Math: down + setSwing = middle.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, AirPurifiers, Curtain, Dehumidifiers, Light, Trash]. Exists: Yes. Blocked: No. Math: down -> middle = middle.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home46/guest_bedroom/artifacts/guestBedroomAirConditioner/set_swing",
     "params": { "swing": "middle" }
@@ -740,19 +740,19 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: MediaPlayer. Exists: Yes. Blocked: No. Math: 84 - 84 = 0.",
+    "reasoning": "Target: MediaPlayer. Room contains: [AirPurifiers, Curtain, Dehumidifiers, Fan, Heating, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 84 - 84 = 0.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home73/master_bedroom/artifacts/masterBedroomMediaPlayer/set_volume",
     "params": { "volume": 0 }
   },
   {
-    "reasoning": "Target: MediaPlayer. Exists: Yes. Blocked: No. Math: 84 - 14 = 70.",
+    "reasoning": "Target: MediaPlayer. Room contains: [AirPurifiers, Curtain, Dehumidifiers, Fan, Heating, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 84 - 14 = 70.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home73/master_bedroom/artifacts/masterBedroomMediaPlayer/set_volume",
     "params": { "volume": 70 }
   },
   {
-    "reasoning": "Target: Curtain. Exists: Yes. Blocked: No. Math: 0 + 50 = 50.",
+    "reasoning": "Target: Curtain. Room contains: [AirPurifiers, Curtain, Dehumidifiers, Fan, Heating, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 0 + 50 = 50.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home73/master_bedroom/artifacts/masterBedroomCurtain/set_degree",
     "params": { "degree": 50 }
@@ -805,17 +805,17 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: AirConditioner. Exists: Yes. Blocked: Yes. Math: 30 - 10 = 20.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, AirPurifiers, Humidifier, Light]. Exists: Yes. Blocked: Yes. Math: 30 - 10 = 20.",
     "execution": "error_input"
   },
   {
-    "reasoning": "Target: AirConditioner. Exists: Yes. Blocked: No. Math: 24 - 8 = 16.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, AirPurifiers, Aromatherapy, Curtain, Dehumidifiers, Light]. Exists: Yes. Blocked: No. Math: 24 - 8 = 16.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home35/master_bedroom/artifacts/masterBedroomAirConditioner/set_temperature",
     "params": { "temperature": 16 }
   },
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: No. Math: 26 - 26 = 0.",
+    "reasoning": "Target: Aromatherapy. Room contains: [AirConditioner, Aromatherapy, Humidifier, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 26 - 26 = 0.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home35/living_room/artifacts/livingRoomAromatherapy/set_intensity",
     "params": { "intensity": 0 }
@@ -863,17 +863,17 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: Yes. Math: 63 + 0 = 63.",
+    "reasoning": "Target: Aromatherapy. Room contains: [Aromatherapy, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: Yes. Math: 63 + 7 = 70.",
     "execution": "error_input"
   },
   {
-    "reasoning": "Target: Humidifier. Exists: Yes. Blocked: No. Math: 8 + 42 = 50.",
+    "reasoning": "Target: Humidifier. Room contains: [AirConditioner, Curtain, Humidifier, Light, Trash]. Exists: Yes. Blocked: No. Math: 8 + 42 = 50.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home81/study_room/artifacts/studyRoomHumidifier/set_intensity",
     "params": { "intensity": 50 }
   },
   {
-    "reasoning": "Target: Heating. Exists: Yes. Blocked: No. Math: 16 + 14 = 30.",
+    "reasoning": "Target: Heating. Room contains: [Heating, Light]. Exists: Yes. Blocked: No. Math: 16 + 14 = 30.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home81/bathroom/artifacts/bathroomHeating/set_temperature",
     "params": { "temperature": 30 }
@@ -924,19 +924,19 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 17 + 23 = 40.",
+    "reasoning": "Target: Light. Room contains: [AirConditioner, AirPurifiers, Curtain, Dehumidifiers, Light, Trash]. Exists: Yes. Blocked: No. Math: 17 + 23 = 40.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home37/guest_bedroom/artifacts/guestBedroomLight/set_brightness",
     "params": { "brightness": 40 }
   },
   {
-    "reasoning": "Target: Dehumidifiers. Exists: Yes. Blocked: No. Math: sleep + 0 = sleep.",
+    "reasoning": "Target: Dehumidifiers. Room contains: [AirConditioner, AirPurifiers, Dehumidifiers, Light, Trash]. Exists: Yes. Blocked: No. Math: sleep + 0 = sleep.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home37/study_room/artifacts/studyRoomDehumidifiers/set_mode",
     "params": { "mode": "sleep" }
   },
   {
-    "reasoning": "Target: Fan. Exists: Yes. Blocked: No. Math: off + on = on.",
+    "reasoning": "Target: Fan. Room contains: [Fan, Heating, Humidifier, Light]. Exists: Yes. Blocked: No. Math: off + on = on.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home37/living_room/artifacts/livingRoomFan/turn_on",
     "params": {}
@@ -978,13 +978,11 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Light. Exists: Yes. Blocked: No. Math: 83 + 17 = 100.",
-    "execution": "success",
-    "affordance": "http://localhost:8080/workspaces/home41/foyer/artifacts/foyerLight/set_brightness",
-    "params": { "brightness": 100 }
+    "reasoning": "Target: Light. Room contains: [Aromatherapy, Light]. Exists: Yes. Blocked: No. Math: 83 + 17 = 100.",
+    "execution": "success"
   },
   {
-    "reasoning": "Target: MediaPlayer. Exists: Yes. Blocked: No. Math: 93 - 73 = 20.",
+    "reasoning": "Target: MediaPlayer. Room contains: [Curtain, Light, MediaPlayer]. Exists: Yes. Blocked: No. Math: 93 - 73 = 20.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home41/balcony/artifacts/balconyMediaPlayer/set_volume",
     "params": { "volume": 20 }
@@ -1026,13 +1024,13 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Curtain. Exists: Yes. Blocked: No. Math: 0 + 100 = 100.",
+    "reasoning": "Target: Curtain. Room contains: [AirConditioner, AirPurifiers, Curtain, Humidifier, Light, Trash]. Exists: Yes. Blocked: No. Math: 0 + 100 = 100.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home2/guest_bedroom/artifacts/guestBedroomCurtain/set_degree",
     "params": { "degree": 100 }
   },
   {
-    "reasoning": "Target: MediaPlayer. Exists: Yes. Blocked: No. Math: 30 - 10 = 20.",
+    "reasoning": "Target: MediaPlayer. Room contains: [AirPurifiers, GarageDoor, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 30 - 10 = 20.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home2/garage/artifacts/garageMediaPlayer/set_volume",
     "params": { "volume": 20 }
@@ -1074,13 +1072,13 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: MasterBedroomLight. Exists: Yes. Blocked: No. Math: 82 + 18 = 100.",
+    "reasoning": "Target: Light in master_bedroom. Room contains: [AirConditioner, AirPurifiers, Aromatherapy, Humidifier, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 82 + 18 = 100.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home16/master_bedroom/artifacts/masterBedroomLight/set_brightness",
     "params": { "brightness": 100 }
   },
   {
-    "reasoning": "Target: MasterBedroomAromatherapy. Exists: Yes. Blocked: No. Math: 25 - 15 = 10.",
+    "reasoning": "Target: Aromatherapy in master_bedroom. Room contains: [AirConditioner, AirPurifiers, Aromatherapy, Humidifier, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: 25 - 15 = 10.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home16/master_bedroom/artifacts/masterBedroomAromatherapy/set_interval",
     "params": { "interval": 10 }
@@ -1131,17 +1129,19 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: No. Math: 42 - 22 = 20.",
+    "reasoning": "Target: Aromatherapy. Room contains: [Aromatherapy, Light, Trash]. Exists: Yes. Blocked: No. Math: 42 - 22 = 20.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home56/balcony/artifacts/balconyAromatherapy/set_interval",
     "params": { "interval": 20 }
   },
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: No. Math: 42 + 0.1333 = 42.1333.",
-    "execution": "error_input"
+    "reasoning": "Target: Aromatherapy. Room contains: [Aromatherapy, Light, Trash]. Exists: Yes. Blocked: No. Math: 42 + 8 = 50.",
+    "execution": "success",
+    "affordance": "http://localhost:8080/workspaces/home56/balcony/artifacts/balconyAromatherapy/set_interval",
+    "params": { "interval": 50 }
   },
   {
-    "reasoning": "Target: Blinds. Exists: Yes. Blocked: No. Math: open - 0 = closed.",
+    "reasoning": "Target: Blinds. Room contains: [AirPurifiers, Blinds, GarageDoor, Light, MediaPlayer, Trash]. Exists: Yes. Blocked: No. Math: N/A.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home56/garage/artifacts/garageBlinds/close",
     "params": {}
@@ -1183,13 +1183,13 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: AirConditioner in living_room. Exists: Yes. Blocked: No. Math: middle +/- middle = middle.",
+    "reasoning": "Target: AirConditioner. Room contains: [AirConditioner, Aromatherapy, Curtain, Dehumidifiers, Light, Trash]. Exists: Yes. Blocked: No. Math: swing: middle +/- middle = middle.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home63/living_room/artifacts/livingRoomAirConditioner/set_swing",
     "params": { "swing": "middle" }
   },
   {
-    "reasoning": "Target: Garage Light. Exists: Yes. Blocked: No. Math: 30 + 50 = 80.",
+    "reasoning": "Target: Light. Room contains: [Blinds, GarageDoor, Light, Trash]. Exists: Yes. Blocked: No. Math: 30 + 50 = 80.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home63/garage/artifacts/garageLight/set_brightness",
     "params": { "brightness": 80 }
@@ -1231,13 +1231,13 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Aromatherapy. Exists: Yes. Blocked: No. Math: off +/- 0 = off.",
+    "reasoning": "Target: Aromatherapy. Room contains: [Aromatherapy, Light]. Exists: Yes. Blocked: No. Math: off +/- 0 = off.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home62/corridor/artifacts/corridorAromatherapy/turn_off",
     "params": {}
   },
   {
-    "reasoning": "Target: Heating. Exists: Yes. Blocked: No. Math: 29 + 1 = 30.",
+    "reasoning": "Target: Heating. Room contains: [AirPurifiers, Curtain, Dehumidifiers, Fan, Heating, Light]. Exists: Yes. Blocked: No. Math: 29 + 1 = 30.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home62/study_room/artifacts/studyRoomHeating/set_temperature",
     "params": { "temperature": 30 }
@@ -1279,13 +1279,13 @@ EXPECTED OUTPUT (GROUND TRUTH)
 [FullContextSolver] LLM Raw Response:
 [
   {
-    "reasoning": "Target: Corridor Light. Exists: Yes. Blocked: No. Math: 9 + 91 = 100.",
+    "reasoning": "Target: Light. Room contains: [Light, Trash]. Exists: Yes. Blocked: No. Math: 9 + 91 = 100.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home70/corridor/artifacts/corridorLight/set_brightness",
     "params": { "brightness": 100 }
   },
   {
-    "reasoning": "Target: Bathroom Light. Exists: Yes. Blocked: No. Math: 74 + 6 = 80.",
+    "reasoning": "Target: Light. Room contains: [Blinds, Light, Trash]. Exists: Yes. Blocked: No. Math: 74 + 6 = 80.",
     "execution": "success",
     "affordance": "http://localhost:8080/workspaces/home70/bathroom/artifacts/bathroomLight/set_brightness",
     "params": { "brightness": 80 }

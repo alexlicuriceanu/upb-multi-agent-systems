@@ -123,6 +123,9 @@ def main():
     print("Running evaluation...")
     print("=" * 70)
 
+    os.makedirs(HOMEWORK_DIR / "results", exist_ok=True)
+    results_path = HOMEWORK_DIR / "results" / f"{type(solver).__name__}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json"
+
     for req_idx, request in enumerate(requests):
         # Solve using agent communication protocol
         start = time.time()
@@ -199,14 +202,12 @@ def main():
     env_manager.stop()
     print("✓ EnvironmentManager agent stopped")
 
-    os.makedirs(HOMEWORK_DIR / "results", exist_ok=True)
-    results_path = HOMEWORK_DIR / "results" / f"{type(solver).__name__}_{time.strftime('%Y-%m-%d_%H-%M-%S')}.json"
+    
     with open(results_path, "w") as f:
         json.dump({
             "metrics": metrics.to_dict(),
-            "results": [result.to_dict() for result in results]
         }, f)
-        
+
     print(f"✓ Results saved to {results_path}")
 
     return 0
