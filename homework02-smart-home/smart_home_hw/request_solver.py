@@ -351,10 +351,11 @@ class SequentialSolver(RequestSolverAgent):
             """Helper to print conditionally but write to file unconditionally."""
             if self.verbose:
                 print(msg)
+
             with open(self.log_filename, "a", encoding="utf-8") as log_file:
                 log_file.write(msg + "\n")
 
-        # Extract and format the expected output (ground truth)
+        # Extract and format the expected output
         expected_dicts = [dataclasses.asdict(o) for o in request.output]
         expected_json = json.dumps(expected_dicts, indent=2)
 
@@ -370,7 +371,7 @@ class SequentialSolver(RequestSolverAgent):
         )
         log_message(banner)
 
-        # Step 1: Call LLM to infer goal keywords and likely device types/rooms
+        # Call LLM to infer goal keywords and likely device types/rooms
         inference_prompt = f"""
 You are an expert Smart Home AI analyzer.
 
@@ -416,7 +417,7 @@ If rooms are completely unknown, set "rooms": ["all"].
             log_message(f"[SequentialSolver] Failed to parse inference: {e}")
             return [ActionOutput(execution="error_input")]
 
-        # Step 2: Selectively query artifacts for inferred rooms
+        # Selectively query artifacts for inferred rooms
         all_rooms = self.env_manager.get_rooms(home_id)
         rooms_to_query = all_rooms if "all" in inferred_rooms else [r for r in all_rooms if r in inferred_rooms]
         
@@ -424,6 +425,7 @@ If rooms are completely unknown, set "rooms": ["all"].
         for room in rooms_to_query:
             artifacts = self.env_manager.get_artifacts_in_room(home_id, room)
             room_data = []
+
             for artifact_uri in artifacts:
                 affordances = self.env_manager.get_artifact_affordances(artifact_uri)
                 state = self.env_manager.get_artifact_state(artifact_uri)
@@ -435,14 +437,15 @@ If rooms are completely unknown, set "rooms": ["all"].
                     "actions": [{"name": a.name, "uri": a.uri, "schema": a.input_schema} for a in affordances.actions]
                 }
                 room_data.append(device_info)
+
             if room_data:
                 environment_state[room] = room_data
 
-        # Step 3: Get active preferences
+        # Get active preferences
         active_prefs = self.env_manager.get_active_preferences(request.issued_at)
         prefs_data = [{"device": p.device_type, "room": p.room, "reason": p.reason} for p in active_prefs]
 
-        # Step 4: Call LLM to map sub-goals to discovered affordances
+        # Call LLM to map sub-goals to discovered affordances
         mapping_prompt = f"""
 You are an expert Smart Home AI mapping user requests to precise actions.
 
@@ -488,7 +491,7 @@ OUTPUT FORMAT MUST MATCH THIS EXACTLY:
         raw_response = call_llm(self.llm_client, mapping_prompt)
         log_message(f"[SequentialSolver] LLM Mapping Response:\n{raw_response}\n")
 
-        # Step 5: Extract and parse the final JSON
+        # Extract and parse the final JSON
         try:
             clean_text = raw_response.strip()
             if clean_text.startswith("```json"):
@@ -508,6 +511,7 @@ OUTPUT FORMAT MUST MATCH THIS EXACTLY:
             parsed_outputs = json.loads(clean_json)
             
             final_outputs = []
+
             for item in parsed_outputs:
                 if item.get("execution") == "error_input":
                     final_outputs.append(ActionOutput(execution="error_input"))
@@ -517,11 +521,13 @@ OUTPUT FORMAT MUST MATCH THIS EXACTLY:
                         affordance=item.get("affordance"),
                         params=item.get("params", {})
                     ))
+
             return final_outputs
             
         except json.JSONDecodeError as e:
             log_message(f"[SequentialSolver] JSON Parsing Error: {e}")
             return [ActionOutput(execution="error_input")]
+        
         except Exception as e:
             log_message(f"[SequentialSolver] Unexpected Error: {e}")
             return [ActionOutput(execution="error_input")]
