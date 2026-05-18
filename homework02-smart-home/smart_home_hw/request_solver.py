@@ -573,7 +573,7 @@ class SemanticSolver(RequestSolverAgent):
         )
         log_message(banner)
 
-        # Pre-fetch rooms AND their devices to help the LLM map locations correctly
+        # Pre-fetch rooms and their devices to help the LLM map locations correctly
         all_rooms = self.env_manager.get_rooms(home_id)
         room_context = {}
         for r in all_rooms:
@@ -585,9 +585,7 @@ class SemanticSolver(RequestSolverAgent):
             if dev_types:
                 room_context[r] = dev_types
 
-        # ---------------------------------------------------------------------
-        # STEP 1: Call LLM to parse and classify sub-goals
-        # ---------------------------------------------------------------------
+        # Call LLM to parse and classify sub-goals
         prompt = f"""
 You are a strict semantic parser for a Smart Home system.
 User Request: "{request.input}"
@@ -627,22 +625,23 @@ Example Output:
 
         try:
             clean_text = raw_response.strip()
-            if clean_text.startswith("\x60\x60\x60json"): clean_text = clean_text[7:]
-            if clean_text.startswith("\x60\x60\x60"): clean_text = clean_text[3:]
-            if clean_text.endswith("\x60\x60\x60"): clean_text = clean_text[:-3]
+            if clean_text.startswith("```json"):
+                clean_text = clean_text[7:]
+            if clean_text.startswith("```"):
+                clean_text = clean_text[3:]
+            if clean_text.endswith("```"):
+                clean_text = clean_text[:-3]
             
             sub_goals = json.loads(clean_text.strip())
+
         except Exception as e:
             log_message(f"[SemanticSolver] JSON Parsing Error: {e}")
             return [ActionOutput(execution="error_input")]
 
         active_prefs = self.env_manager.get_active_preferences(request.issued_at)
-        
         final_outputs = []
 
-        # ---------------------------------------------------------------------
-        # STEP 2 & 3: Iterate through parsed goals and generate imperative logic
-        # ---------------------------------------------------------------------
+        # Iterate through parsed goals and generate imperative logic
         for goal in sub_goals:
             target_room = goal.get("room", "")
             device_type = goal.get("device_type", "")
@@ -656,15 +655,18 @@ Example Output:
                 # Target room was omitted, infer it safely by finding the first match
                 for r in all_rooms:
                     artifacts_in_r = self.env_manager.get_artifacts_in_room(home_id, r)
+
                     for a_uri in artifacts_in_r:
                         aff = self.env_manager.get_artifact_affordances(a_uri)
+
                         if aff.device_type.lower() == device_type.lower() or device_type.lower() in aff.device_type.lower():
                             target_room = r
                             break
+
                     if target_room:
                         break
 
-            # STRICT preference matching
+            # Strict preference matching
             is_blocked = False
             for pref in active_prefs:
                 pref_dev = pref.device_type.replace("_", "").lower()
@@ -691,6 +693,7 @@ Example Output:
             
             for artifact_uri in artifacts_in_room:
                 affordances = self.env_manager.get_artifact_affordances(artifact_uri)
+
                 if affordances.device_type.lower() == device_type.lower() or \
                    device_type.lower() in affordances.device_type.lower():
                     target_uri = artifact_uri
@@ -702,7 +705,7 @@ Example Output:
                 final_outputs.append(ActionOutput(execution="error_input"))
                 continue
 
-            # STEP 2b: Compute final value for adjustments
+            # Compute final value for adjustments
             final_value = value
             if action_type == "adjust_property":
                 current_state = self.env_manager.get_artifact_state(target_uri)
@@ -715,6 +718,7 @@ Example Output:
                            (prop_name == "degree" and "pos" in p_name.lower()) or \
                            (prop_name == "fan_speed" and "speed" in p_name.lower()):
                             current_val = p_val
+
                             break
                             
                 if current_val is None:
@@ -730,7 +734,7 @@ Example Output:
                     final_outputs.append(ActionOutput(execution="error_input"))
                     continue
 
-            # STEP 2c: Find matching action affordance
+            # Find matching action affordance
             target_action_uri = None
             target_schema_key = None
             
@@ -751,8 +755,10 @@ Example Output:
                            (prop_name == "fan_speed" and "speed" in param_name.lower()):
                             target_action_uri = action.uri
                             target_schema_key = param_name
+
                             break
-                    if target_action_uri: break
+                    if target_action_uri:
+                        break
                     
             # State Routing (turn_on, turn_off, open, close)
             if not target_action_uri and prop_name == "state" and isinstance(final_value, str):
@@ -762,6 +768,7 @@ Example Output:
                     "open": "open", "opened": "open", 
                     "close": "close", "closed": "close"
                 }
+
                 target_action_name = action_map.get(val_lower)
                     
                 if target_action_name:
@@ -775,7 +782,7 @@ Example Output:
                 final_outputs.append(ActionOutput(execution="error_input"))
                 continue
 
-            # STEP 2d: Generate ActionOutput
+            # Generate ActionOutput
             params = {target_schema_key: final_value} if target_schema_key else {}
             
             log_message(f"[SemanticSolver] Success mapping -> {target_action_uri} with {params}")
