@@ -247,7 +247,7 @@ class EnvironmentManagerAgent:
         
         # Determine the abstract device type specifically for this artifact
         device_type = "unknown"
-        for _, _, obj in g.triples((subject_uri, rdflib.RDF.type, None)): # <--- Change 'None' to 'subject_uri'
+        for _, _, obj in g.triples((subject_uri, rdflib.RDF.type, None)):
             if str(obj).startswith("http://example.org/"):
                 device_type = str(obj).replace("http://example.org/", "")
                 # Some TDs might have multiple example.org types, make sure we don't grab the room
@@ -265,7 +265,7 @@ class EnvironmentManagerAgent:
 
         subject_uri = rdflib.URIRef(artifact_uri)
 
-        # 1. Parse Property Affordances
+        # Parse Property Affordances
         for prop_aff in g.objects(subject_uri, td.hasPropertyAffordance):
             name = str(next(g.objects(prop_aff, td.name), ""))
             target = ""
@@ -275,7 +275,7 @@ class EnvironmentManagerAgent:
             if name and target:
                 info.properties.append(PropertyAffordance(name=name, uri=target))
 
-        # 2. Parse Action Affordances
+        # Parse Action Affordances
         for act_aff in g.objects(subject_uri, td.hasActionAffordance):
             name = str(next(g.objects(act_aff, td.name), ""))
             target = ""
