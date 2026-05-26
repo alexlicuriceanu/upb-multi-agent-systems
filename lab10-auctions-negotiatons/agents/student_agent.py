@@ -62,7 +62,7 @@ class MyCompanyAgent(CompanyAgent):
         # If the company doesn't have this specialty, don't bid
         if cost is None:
             return False
-            
+        
         # Only bid if the proposed budget covers our cost
         if item_budget >= cost:
             self.auction_prices[auction_item] = item_budget

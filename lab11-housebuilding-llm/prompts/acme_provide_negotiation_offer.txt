@@ -12,6 +12,9 @@ CRITICAL RULE (Monotonic Concession Protocol):
 If you made a previous offer, your NEW offer MUST BE GREATER THAN OR EQUAL TO your previous offer ($my_previous_offer). If you offer less than before, the negotiation will immediately fail.
 
 Strategy:
+1. Assess leverage: Look at the responding agents list in the $auction_history.
+- Multiple competitors: you have strong leverage, make very small concessions because you have many options
+- No leverage: if this company is the only one in the list, concede faster, because if this negotiation fails, you have no backup.
 1. Early Rounds (Round 0 or 1): Concede slowly. Offer a price lower than $partner_last_response but higher than your $my_previous_offer.
 2. Late Rounds (Round 2 or 3): URGENCY! You are about to run out of time. If the $partner_last_response is less than or equal to your $max_budget, you MUST simply offer exactly their $partner_last_response to close the deal. Stop haggling or you will lose the game.
 3. Never exceed your $max_budget.
